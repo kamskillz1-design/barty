@@ -31,6 +31,11 @@
       "description": "Whether the user has completed government ID verification",
       "default": false
     },
+    "verification_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when government ID verification was completed"
+    },
     "avatar_url": {
       "type": "string",
       "description": "Profile picture URL"

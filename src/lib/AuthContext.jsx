@@ -127,6 +127,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Silent refresh of the current user without toggling the global loading
+  // overlay — used after profile edits (e.g. ID verification) so the UI updates
+  // without blanking the screen mid-action.
+  const refreshUser = async () => {
+    try {
+      const currentUser = await base44.auth.me();
+      setUser(currentUser);
+    } catch (error) {
+      console.error('Silent user refresh failed:', error);
+    }
+  };
+
   const navigateToLogin = () => {
     // Use the SDK's redirectToLogin method
     base44.auth.redirectToLogin(window.location.href);
@@ -144,7 +156,8 @@ export const AuthProvider = ({ children }) => {
       logout,
       navigateToLogin,
       checkUserAuth,
-      checkAppState
+      checkAppState,
+      refreshUser
     }}>
       {children}
     </AuthContext.Provider>

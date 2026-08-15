@@ -9,7 +9,7 @@ import { ShieldCheck, Star, Plus, MapPin } from 'lucide-react';
 
 export default function Profile() {
   const { t, lang, setLang } = useI18n();
-  const { user, logout, checkUserAuth } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const [form, setForm] = useState({ preferred_language: lang, country: '', city: '', town: '', bio: '', verified: false, avatar_url: '' });
   const [listings, setListings] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -58,6 +58,11 @@ export default function Profile() {
   };
 
   const [verifyOpen, setVerifyOpen] = useState(false);
+
+  const handleVerified = async () => {
+    setForm((f) => ({ ...f, verified: true }));
+    if (refreshUser) await refreshUser();
+  };
 
   const avgRating = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
   const inputCls = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white';
@@ -158,7 +163,7 @@ export default function Profile() {
         )}
       </div>
 
-      <VerifyIdDialog open={verifyOpen} onOpenChange={setVerifyOpen} onVerified={checkUserAuth} defaultValue={form.country} />
+      <VerifyIdDialog open={verifyOpen} onOpenChange={setVerifyOpen} onVerified={handleVerified} defaultValue={form.country} />
     </div>
   );
 }

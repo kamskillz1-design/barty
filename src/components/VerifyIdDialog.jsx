@@ -55,10 +55,10 @@ export default function VerifyIdDialog({ open, onOpenChange, onVerified, default
     try {
       // Mock verification handshake — replace with a secure third-party call.
       await new Promise((res) => setTimeout(res, 1200));
-      await base44.auth.updateMe({ verified: true });
-      setStatus('idle');
-      onOpenChange(false);
+      await base44.auth.updateMe({ verified: true, verification_date: new Date().toISOString() });
+      setStatus('success');
       if (typeof onVerified === 'function') await onVerified();
+      setTimeout(() => onOpenChange(false), 1200);
     } catch {
       setStatus('error');
     }
@@ -109,6 +109,11 @@ export default function VerifyIdDialog({ open, onOpenChange, onVerified, default
           {status === 'error' && (
             <p className="text-xs font-medium text-rose-600">{t.profile.verifyError}</p>
           )}
+          {status === 'success' && (
+            <p className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+              <ShieldCheck className="h-4 w-4" /> {t.profile.verifySuccess}
+            </p>
+          )}
 
           <DialogFooter className="gap-2 sm:gap-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} className="text-sm font-medium text-slate-600 hover:bg-slate-100">
@@ -116,11 +121,11 @@ export default function VerifyIdDialog({ open, onOpenChange, onVerified, default
             </Button>
             <Button
               type="submit"
-              disabled={!canSubmit}
+              disabled={!canSubmit || status === 'success'}
               className="inline-flex items-center gap-2 rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-60"
             >
               {status === 'verifying' && <Loader2 className="h-4 w-4 animate-spin" />}
-              {status === 'verifying' ? t.profile.verifying : t.profile.verifyNow}
+              {status === 'success' ? t.profile.verifySuccess : status === 'verifying' ? t.profile.verifying : t.profile.verifyNow}
             </Button>
           </DialogFooter>
         </form>

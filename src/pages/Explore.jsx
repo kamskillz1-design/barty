@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import ListingCard from '@/components/ListingCard';
 import SafetyBanner from '@/components/SafetyBanner';
 import SearchableSelect from '@/components/SearchableSelect';
-import { COUNTRIES, LANGUAGES } from '@/lib/geoData';
+import { COUNTRIES } from '@/lib/geoData';
 import { Search, Plus, Package, Scale, Globe2, Sparkles, SlidersHorizontal } from 'lucide-react';
 
 const CATEGORY_KEYS = ['electronics', 'clothing', 'home', 'tools', 'books', 'toys', 'sports', 'tutoring', 'repairs', 'design', 'transport', 'cooking', 'other'];
@@ -22,7 +22,6 @@ export default function Explore() {
   const [category, setCategory] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [townFilter, setTownFilter] = useState('');
-  const [languageFilter, setLanguageFilter] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -46,10 +45,9 @@ export default function Explore() {
       if (typeFilter && l.type !== typeFilter) return false;
       if (countryFilter && (l.country || '').toLowerCase() !== countryFilter.toLowerCase()) return false;
       if (tl && !(`${l.town || ''} ${l.city || ''}`.toLowerCase().includes(tl))) return false;
-      if (languageFilter && (l.language || '').toLowerCase() !== languageFilter.toLowerCase()) return false;
       return true;
     });
-  }, [listings, q, category, typeFilter, countryFilter, townFilter, languageFilter]);
+  }, [listings, q, category, typeFilter, countryFilter, townFilter]);
 
   return (
     <div className="space-y-7">
@@ -95,7 +93,7 @@ export default function Explore() {
             className="w-full rounded-xl border border-slate-200 bg-slate-50 ps-9 pe-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white"
           />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
             <option value="">{t.search.allTypes}</option>
             <option value="good">{t.search.goods}</option>
@@ -107,7 +105,6 @@ export default function Explore() {
           </select>
           <SearchableSelect options={COUNTRIES} value={countryFilter} onChange={setCountryFilter} allLabel={t.search.allLocations} placeholder={t.search.allLocations} />
           <input value={townFilter} onChange={(e) => setTownFilter(e.target.value)} placeholder={t.search.anyTown} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white" />
-          <SearchableSelect options={LANGUAGES} value={languageFilter} onChange={setLanguageFilter} allLabel={t.search.allLanguages} placeholder={t.search.allLanguages} />
         </div>
       </div>
 
