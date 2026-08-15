@@ -226,11 +226,15 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
       const langName = LANGUAGES_BY_CODE[code]?.label || code;
       const en = JSON.stringify(translations.en);
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a professional UI localizer. Translate the user-facing strings in the JSON below into ${langName} (language code "${code}"). Return ONLY a JSON object with the EXACT same structure and the same keys, as the top-level object (no wrapper key, no commentary). Translate every human-readable value into ${langName}; keep object keys, enum-like codes, and English-in-code tokens verbatim. Set the "_dir" field to "rtl" if ${langName} is written right-to-left (e.g. Arabic, Hebrew, Persian/Farsi/Dari, Urdu, Pashto, Sindhi, Yiddish, Dhivehi, Uyghur, Kashmiri), otherwise "ltr". JSON:\n${en}`,
-        response_json_schema: { type: 'object' },
+        prompt: `You are a professional UI localizer. Translate the user-facing strings in the JSON below into ${langName} (language code "${code}"). Return ONLY a raw JSON object (no markdown, no code fences, no commentary) with the EXACT same structure and the same keys, as the top-level object. Translate every human-readable value into ${langName}; keep object keys, enum-like codes, and English-in-code tokens verbatim. Set the "_dir" field to "rtl" if ${langName} is written right-to-left (e.g. Arabic, Hebrew, Persian/Farsi/Dari, Urdu, Pashto, Sindhi, Yiddish, Dhivehi, Uyghur, Kashmiri), otherwise "ltr". JSON:\n${en}`,
         model: 'gpt_5_mini'
       });
-      const dict = (res && typeof res === 'object' && !Array.isArray(res)) ? res : {};
+      // InvokeLLM returns a string when no response_json_schema is supplied —
+      // strip any accidental code fences and parse the JSON object ourselves.
+      const raw = typeof res === 'string' ? res.trim().replace(/^```(?:json)?\s*|\s*```$/g, '').trim() : '';
+      let dict = {};
+      try { dict = raw ? JSON.parse(raw) : {}; } catch { dict = {}; }
+      if (!dict || typeof dict !== 'object' || Array.isArray(dict)) dict = {};
       try { localStorage.setItem(cacheKey, JSON.stringify(dict)); } catch { /* storage full */ }
       applyLang(code, dict);
     } catch {
