@@ -28,7 +28,7 @@ export default function Explore() {
     (async () => {
       setLoading(true);
       try {
-        const data = await base44.entities.Listing.list('-created_date', 200);
+        const data = await base44.entities.Listing.list('-created_date', 24);
         setListings(data || []);
       } finally {
         setLoading(false);
