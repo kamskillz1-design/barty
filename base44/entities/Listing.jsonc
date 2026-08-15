@@ -34,6 +34,10 @@
       "type": "string",
       "description": "Village or local area"
     },
+    "language": {
+      "type": "string",
+      "description": "Language the listing owner communicates in"
+    },
     "baseline_value": {
       "type": "integer",
       "description": "Internal neutral integer used for fairness matching \u2014 never displayed to users",

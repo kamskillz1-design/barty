@@ -5,7 +5,9 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import ListingCard from '@/components/ListingCard';
 import SafetyBanner from '@/components/SafetyBanner';
-import { Search, MapPin, Plus, Package, Scale, Globe2, Sparkles } from 'lucide-react';
+import SearchableSelect from '@/components/SearchableSelect';
+import { COUNTRIES, LANGUAGES } from '@/lib/geoData';
+import { Search, Plus, Package, Scale, Globe2, Sparkles, SlidersHorizontal } from 'lucide-react';
 
 const CATEGORY_KEYS = ['electronics', 'clothing', 'home', 'tools', 'books', 'toys', 'sports', 'tutoring', 'repairs', 'design', 'transport', 'cooking', 'other'];
 
@@ -16,9 +18,11 @@ export default function Explore() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [category, setCategory] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [category, setCategory] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
+  const [townFilter, setTownFilter] = useState('');
+  const [languageFilter, setLanguageFilter] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -32,23 +36,20 @@ export default function Explore() {
     })();
   }, []);
 
-  const locations = useMemo(() => {
-    const set = new Set();
-    listings.forEach((l) => { if (l.city) set.add(l.city); });
-    return Array.from(set).sort();
-  }, [listings]);
-
   const filtered = useMemo(() => {
+    const ql = q.trim().toLowerCase();
+    const tl = townFilter.trim().toLowerCase();
     return listings.filter((l) => {
       if (l.status === 'traded') return false;
-      if (user && l.offering_user_id === user.id) return true; // still show own
-      if (q && !(`${l.title} ${l.description}`.toLowerCase().includes(q.toLowerCase()))) return false;
+      if (ql && !(`${l.title || ''} ${l.description || ''}`.toLowerCase().includes(ql))) return false;
       if (category && l.category !== category) return false;
       if (typeFilter && l.type !== typeFilter) return false;
-      if (locationFilter && l.city !== locationFilter) return false;
+      if (countryFilter && (l.country || '').toLowerCase() !== countryFilter.toLowerCase()) return false;
+      if (tl && !(`${l.town || ''} ${l.city || ''}`.toLowerCase().includes(tl))) return false;
+      if (languageFilter && (l.language || '').toLowerCase() !== languageFilter.toLowerCase()) return false;
       return true;
     });
-  }, [listings, q, category, typeFilter, locationFilter, user]);
+  }, [listings, q, category, typeFilter, countryFilter, townFilter, languageFilter]);
 
   return (
     <div className="space-y-7">
@@ -80,32 +81,33 @@ export default function Explore() {
       <SafetyBanner />
 
       {/* Filters */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-slate-400" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder={t.search.placeholder}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 ps-9 pe-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white"
-            />
-          </div>
-          <div className="flex gap-3">
-            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
-              <option value="">{t.search.allTypes}</option>
-              <option value="good">{t.search.goods}</option>
-              <option value="service">{t.search.services}</option>
-            </select>
-            <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
-              <option value="">{t.search.allCategories}</option>
-              {CATEGORY_KEYS.map((k) => <option key={k} value={k}>{t.categories[k]}</option>)}
-            </select>
-            <select value={locationFilter} onChange={(e) => setLocationFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
-              <option value="">{t.search.allLocations}</option>
-              {locations.map((l) => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </div>
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+        <div className="flex items-center gap-2 text-slate-700">
+          <SlidersHorizontal className="h-4 w-4 text-sky-600" />
+          <span className="text-sm font-semibold">{t.search.search}</span>
+        </div>
+        <div className="relative">
+          <Search className="absolute top-1/2 -translate-y-1/2 start-3 h-4 w-4 text-slate-400" />
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t.search.placeholder}
+            className="w-full rounded-xl border border-slate-200 bg-slate-50 ps-9 pe-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white"
+          />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
+            <option value="">{t.search.allTypes}</option>
+            <option value="good">{t.search.goods}</option>
+            <option value="service">{t.search.services}</option>
+          </select>
+          <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
+            <option value="">{t.search.allCategories}</option>
+            {CATEGORY_KEYS.map((k) => <option key={k} value={k}>{t.categories[k]}</option>)}
+          </select>
+          <SearchableSelect options={COUNTRIES} value={countryFilter} onChange={setCountryFilter} allLabel={t.search.allLocations} placeholder={t.search.allLocations} />
+          <input value={townFilter} onChange={(e) => setTownFilter(e.target.value)} placeholder={t.search.anyTown} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white" />
+          <SearchableSelect options={LANGUAGES} value={languageFilter} onChange={setLanguageFilter} allLabel={t.search.allLanguages} placeholder={t.search.allLanguages} />
         </div>
       </div>
 

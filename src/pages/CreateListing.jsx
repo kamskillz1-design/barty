@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
+import SearchableSelect from '@/components/SearchableSelect';
+import { COUNTRIES, LANGUAGES } from '@/lib/geoData';
 import { ArrowLeft, ImagePlus, X, Save } from 'lucide-react';
 
 const CATEGORY_KEYS = ['electronics', 'clothing', 'home', 'tools', 'books', 'toys', 'sports', 'tutoring', 'repairs', 'design', 'transport', 'cooking', 'other'];
@@ -15,7 +17,7 @@ export default function CreateListing() {
   const [form, setForm] = useState({
     title: '', description: '', type: 'good', category: 'electronics',
     country: user?.country || '', city: user?.city || '', town: user?.town || '',
-    baseline_value: 50
+    language: '', baseline_value: 50
   });
   const [imageUrls, setImageUrls] = useState([]);
   const [imageInput, setImageInput] = useState('');
@@ -78,10 +80,14 @@ export default function CreateListing() {
             </select>
           </div>
         </div>
-        <div className="grid sm:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.country}</label>
-            <input value={form.country} onChange={(e) => set('country', e.target.value)} className={inputCls} />
+            <SearchableSelect options={COUNTRIES} value={form.country} onChange={(v) => set('country', v)} placeholder={t.listing.country} />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.language}</label>
+            <SearchableSelect options={LANGUAGES} value={form.language} onChange={(v) => set('language', v)} placeholder={t.listing.language} />
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.city}</label>
