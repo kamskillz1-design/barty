@@ -1,0 +1,50 @@
+{
+  "name": "SafeSpot",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Name of the safe meetup spot"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "library",
+        "community_center",
+        "public_square",
+        "police_station",
+        "market",
+        "other"
+      ],
+      "default": "other",
+      "description": "Kind of public space"
+    },
+    "country": {
+      "type": "string",
+      "description": "Country of the spot"
+    },
+    "city": {
+      "type": "string",
+      "description": "City of the spot"
+    },
+    "address": {
+      "type": "string",
+      "description": "Address or location notes"
+    },
+    "verified": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether an admin has verified this spot"
+    },
+    "suggested_by_user_id": {
+      "type": "string",
+      "description": "User who suggested this spot"
+    }
+  },
+  "required": [
+    "name",
+    "type",
+    "country",
+    "city"
+  ]
+}

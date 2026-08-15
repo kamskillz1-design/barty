@@ -20,6 +20,7 @@ import MyListings from '@/pages/MyListings';
 import Trades from '@/pages/Trades';
 import TradeDetail from '@/pages/TradeDetail';
 import Profile from '@/pages/Profile';
+import SafeSpots from '@/pages/SafeSpots';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -63,6 +64,7 @@ const AuthenticatedApp = () => {
             <Route path="/trades" element={<Trades />} />
             <Route path="/trades/:id" element={<TradeDetail />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/safe-spots" element={<SafeSpots />} />
           </Route>
         </Route>
         <Route path="*" element={<PageNotFound />} />

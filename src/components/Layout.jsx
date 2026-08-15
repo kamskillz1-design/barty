@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { Compass, Package, ArrowLeftRight, User, LogOut, Sparkles } from 'lucide-react';
+import { Compass, Package, ArrowLeftRight, User, LogOut, Sparkles, ShieldCheck } from 'lucide-react';
 
 export default function Layout() {
   const { t } = useI18n();
@@ -22,6 +22,7 @@ export default function Layout() {
     { to: '/explore', label: t.nav.explore, icon: Compass },
     { to: '/my-listings', label: t.nav.myListings, icon: Package },
     { to: '/trades', label: t.nav.trades, icon: ArrowLeftRight },
+    { to: '/safe-spots', label: t.nav.hubs, icon: ShieldCheck },
     { to: '/profile', label: t.nav.profile, icon: User }
   ];
 

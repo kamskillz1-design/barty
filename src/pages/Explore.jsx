@@ -8,6 +8,8 @@ import SafetyBanner from '@/components/SafetyBanner';
 import SearchableSelect from '@/components/SearchableSelect';
 import { COUNTRIES } from '@/lib/geoData';
 import { Search, Plus, Package, Scale, Globe2, Sparkles, SlidersHorizontal } from 'lucide-react';
+import GlobalImpactCounter from '@/components/GlobalImpactCounter';
+import LocalDiscovery from '@/components/LocalDiscovery';
 
 const CATEGORY_KEYS = ['electronics', 'clothing', 'home', 'tools', 'books', 'toys', 'sports', 'tutoring', 'repairs', 'design', 'transport', 'cooking', 'other'];
 
@@ -70,6 +72,8 @@ export default function Explore() {
         </div>
       </section>
 
+      <GlobalImpactCounter />
+
       <div className="grid sm:grid-cols-3 gap-3">
         <Feature icon={Package} title={t.landing.feature1} desc={t.landing.feature1d} />
         <Feature icon={Scale} title={t.landing.feature2} desc={t.landing.feature2d} />
@@ -107,6 +111,9 @@ export default function Explore() {
           <input value={townFilter} onChange={(e) => setTownFilter(e.target.value)} placeholder={t.search.anyTown} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white" />
         </div>
       </div>
+
+      {/* Local discovery */}
+      <LocalDiscovery listings={listings} user={user} />
 
       {/* Grid */}
       {loading ? (

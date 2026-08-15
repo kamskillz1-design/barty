@@ -5,6 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import LanguagePicker from '@/components/LanguagePicker';
 import VerifyIdDialog from '@/components/VerifyIdDialog';
+import ImpactStats from '@/components/ImpactStats';
 import { ShieldCheck, Star, Plus, MapPin } from 'lucide-react';
 
 export default function Profile() {
@@ -118,6 +119,8 @@ export default function Profile() {
           <button onClick={() => logout(true)} className="ms-auto rounded-xl px-4 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-100">{t.profile.logout}</button>
         </div>
       </div>
+
+      <ImpactStats user={user} />
 
       <div>
         <div className="flex items-center justify-between">
