@@ -5,7 +5,10 @@ export async function geocode(query) {
   if (!query) return null;
   try {
     const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal });
+    clearTimeout(timer);
     const data = await res.json();
     if (Array.isArray(data) && data[0]) {
       return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lng) };
