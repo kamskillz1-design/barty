@@ -21,20 +21,40 @@
     },
     "country": {
       "type": "string",
-      "description": "Country of the spot"
+      "description": "Country of the spot \u2014 used to auto-serve nearby hubs"
     },
     "city": {
       "type": "string",
-      "description": "City of the spot"
+      "description": "City of the spot \u2014 used to auto-serve nearby hubs"
     },
     "address": {
       "type": "string",
       "description": "Address or location notes"
     },
+    "lat": {
+      "type": "number",
+      "description": "Latitude for map placement"
+    },
+    "lng": {
+      "type": "number",
+      "description": "Longitude for map placement"
+    },
     "verified": {
       "type": "boolean",
       "default": false,
-      "description": "Whether an admin has verified this spot"
+      "description": "Verified once enough community confirmations are reached"
+    },
+    "vote_count": {
+      "type": "integer",
+      "default": 0,
+      "description": "Number of community confirmations"
+    },
+    "voter_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "User ids who have confirmed this spot is safe"
     },
     "suggested_by_user_id": {
       "type": "string",

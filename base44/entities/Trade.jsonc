@@ -58,6 +58,10 @@
       "type": "boolean",
       "default": false,
       "description": "Receiver confirmed in-person completion"
+    },
+    "safe_spot_id": {
+      "type": "string",
+      "description": "Optional Verified Safe Hub chosen for the in-person exchange"
     }
   },
   "required": [

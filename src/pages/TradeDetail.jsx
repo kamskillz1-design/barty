@@ -5,6 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SafetyBanner from '@/components/SafetyBanner';
 import ValueMatchIndicator from '@/components/ValueMatchIndicator';
+import SafeSpotSelector from '@/components/SafeSpotSelector';
 import { ArrowLeft, Send, Check, X, Star, ShieldCheck } from 'lucide-react';
 
 const STATUS_STYLE = {
@@ -134,6 +135,13 @@ export default function TradeDetail() {
         <div className="mt-4">
           <ValueMatchIndicator offeredValue={trade.offered_listing_value} requestedValue={trade.requested_listing_value} />
         </div>
+
+        {(trade.status === 'pending' || trade.status === 'accepted') && (
+          <SafeSpotSelector
+            trade={trade}
+            onChange={async (spotId) => setTrade(await base44.entities.Trade.update(id, { safe_spot_id: spotId }))}
+          />
+        )}
 
         {/* Actions */}
         <div className="mt-4 flex flex-wrap gap-2">
