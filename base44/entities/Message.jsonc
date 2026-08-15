@@ -1,0 +1,23 @@
+{
+  "name": "Message",
+  "type": "object",
+  "properties": {
+    "trade_id": {
+      "type": "string",
+      "description": "Trade conversation this message belongs to"
+    },
+    "sender_id": {
+      "type": "string",
+      "description": "User sending the message"
+    },
+    "text": {
+      "type": "string",
+      "description": "Message content"
+    }
+  },
+  "required": [
+    "trade_id",
+    "sender_id",
+    "text"
+  ]
+}

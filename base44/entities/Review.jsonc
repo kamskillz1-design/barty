@@ -1,0 +1,38 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "trade_id": {
+      "type": "string",
+      "description": "The trade this review belongs to"
+    },
+    "reviewer_id": {
+      "type": "string",
+      "description": "User writing the review"
+    },
+    "reviewee_id": {
+      "type": "string",
+      "description": "User being reviewed"
+    },
+    "rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Star rating 1-5"
+    },
+    "comment": {
+      "type": "string",
+      "description": "Review comment"
+    },
+    "recommend": {
+      "type": "boolean",
+      "description": "Whether the reviewer recommends this user"
+    }
+  },
+  "required": [
+    "trade_id",
+    "reviewer_id",
+    "reviewee_id",
+    "rating"
+  ]
+}

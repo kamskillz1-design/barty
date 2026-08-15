@@ -1,0 +1,70 @@
+{
+  "name": "Listing",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the listing"
+    },
+    "description": {
+      "type": "string",
+      "description": "Detailed description"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "good",
+        "service"
+      ],
+      "description": "Whether this is a physical good or a service"
+    },
+    "category": {
+      "type": "string",
+      "description": "Listing category (e.g. electronics, clothing, tutoring)"
+    },
+    "country": {
+      "type": "string",
+      "description": "Country where the listing is located"
+    },
+    "city": {
+      "type": "string",
+      "description": "City or town"
+    },
+    "town": {
+      "type": "string",
+      "description": "Village or local area"
+    },
+    "baseline_value": {
+      "type": "integer",
+      "description": "Internal neutral integer used for fairness matching \u2014 never displayed to users",
+      "default": 50
+    },
+    "image_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Image URLs for the listing"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "reserved",
+        "traded"
+      ],
+      "default": "available",
+      "description": "Availability status"
+    },
+    "offering_user_id": {
+      "type": "string",
+      "description": "User who owns this listing"
+    }
+  },
+  "required": [
+    "title",
+    "type",
+    "category",
+    "baseline_value"
+  ]
+}

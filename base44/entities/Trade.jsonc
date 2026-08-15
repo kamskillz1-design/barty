@@ -1,0 +1,70 @@
+{
+  "name": "Trade",
+  "type": "object",
+  "properties": {
+    "offered_listing_id": {
+      "type": "string",
+      "description": "Listing the proposer offers"
+    },
+    "offered_listing_title": {
+      "type": "string",
+      "description": "Snapshot title of offered listing"
+    },
+    "offered_listing_value": {
+      "type": "integer",
+      "description": "Snapshot baseline value of offered listing"
+    },
+    "requested_listing_id": {
+      "type": "string",
+      "description": "Listing the proposer wants"
+    },
+    "requested_listing_title": {
+      "type": "string",
+      "description": "Snapshot title of requested listing"
+    },
+    "requested_listing_value": {
+      "type": "integer",
+      "description": "Snapshot baseline value of requested listing"
+    },
+    "proposer_id": {
+      "type": "string",
+      "description": "User proposing the trade"
+    },
+    "receiver_id": {
+      "type": "string",
+      "description": "User who owns the requested listing"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "completed",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Trade status"
+    },
+    "message": {
+      "type": "string",
+      "description": "Initial proposal message"
+    },
+    "proposer_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Proposer confirmed in-person completion"
+    },
+    "receiver_completed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Receiver confirmed in-person completion"
+    }
+  },
+  "required": [
+    "offered_listing_id",
+    "requested_listing_id",
+    "proposer_id",
+    "receiver_id",
+    "status"
+  ]
+}

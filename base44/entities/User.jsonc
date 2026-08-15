@@ -1,0 +1,52 @@
+{
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "admin",
+        "user"
+      ]
+    },
+    "preferred_language": {
+      "type": "string",
+      "description": "UI language preference code",
+      "enum": [
+        "en",
+        "es",
+        "fr",
+        "ar"
+      ]
+    },
+    "country": {
+      "type": "string",
+      "description": "User's country"
+    },
+    "city": {
+      "type": "string",
+      "description": "User's city or town"
+    },
+    "town": {
+      "type": "string",
+      "description": "User's village or local area"
+    },
+    "verified": {
+      "type": "boolean",
+      "description": "Whether the user has completed government ID verification",
+      "default": false
+    },
+    "avatar_url": {
+      "type": "string",
+      "description": "Profile picture URL"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Short profile bio"
+    }
+  },
+  "required": [
+    "role"
+  ],
+  "name": "User",
+  "type": "object"
+}
