@@ -1,4 +1,6 @@
 {
+  "name": "User",
+  "type": "object",
   "properties": {
     "role": {
       "type": "string",
@@ -10,13 +12,7 @@
     },
     "preferred_language": {
       "type": "string",
-      "description": "UI language preference code",
-      "enum": [
-        "en",
-        "es",
-        "fr",
-        "ar"
-      ]
+      "description": "UI language preference (ISO 639-1 code); any world language is supported"
     },
     "country": {
       "type": "string",
@@ -46,7 +42,5 @@
   },
   "required": [
     "role"
-  ],
-  "name": "User",
-  "type": "object"
+  ]
 }

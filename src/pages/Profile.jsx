@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { useI18n, LANGUAGES } from '@/lib/i18n';
+import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
+import LanguagePicker from '@/components/LanguagePicker';
+import VerifyIdDialog from '@/components/VerifyIdDialog';
 import { ShieldCheck, Star, Plus, MapPin } from 'lucide-react';
 
 export default function Profile() {
   const { t, lang, setLang } = useI18n();
-  const { user, logout } = useAuth();
+  const { user, logout, checkUserAuth } = useAuth();
   const [form, setForm] = useState({ preferred_language: lang, country: '', city: '', town: '', bio: '', verified: false, avatar_url: '' });
   const [listings, setListings] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -55,11 +57,7 @@ export default function Profile() {
     }
   };
 
-  const verify = async () => {
-    const updated = { ...form, verified: true };
-    setForm(updated);
-    await base44.auth.updateMe(updated);
-  };
+  const [verifyOpen, setVerifyOpen] = useState(false);
 
   const avgRating = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
   const inputCls = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white';
@@ -78,7 +76,7 @@ export default function Profile() {
               {form.verified ? (
                 <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600"><ShieldCheck className="h-4 w-4" /> {t.profile.verified}</span>
               ) : (
-                <button onClick={verify} className="inline-flex items-center gap-1 text-xs font-semibold text-sky-600 hover:underline">{t.profile.verify}</button>
+                <button onClick={() => setVerifyOpen(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-sky-600 hover:underline">{t.profile.verify}</button>
               )}
               {avgRating && <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> {avgRating}</span>}
             </div>
@@ -88,9 +86,7 @@ export default function Profile() {
         <div className="mt-6 grid sm:grid-cols-2 gap-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.profile.language}</label>
-            <select value={form.preferred_language} onChange={(e) => set('preferred_language', e.target.value)} className={inputCls}>
-              {LANGUAGES.map((l) => <option key={l.code} value={l.code}>{l.flag} {l.label}</option>)}
-            </select>
+            <LanguagePicker variant="form" value={form.preferred_language} onChange={(v) => set('preferred_language', v)} placeholder={t.profile.language} />
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.profile.country}</label>
@@ -161,6 +157,8 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      <VerifyIdDialog open={verifyOpen} onOpenChange={setVerifyOpen} onVerified={checkUserAuth} defaultValue={form.country} />
     </div>
   );
 }
