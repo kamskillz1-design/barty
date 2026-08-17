@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
-import ListingCard from '@/components/ListingCard';
+import BarterCard from '@/components/BarterCard';
 import SafetyBanner from '@/components/SafetyBanner';
 import SearchableSelect from '@/components/SearchableSelect';
 import { COUNTRIES } from '@/lib/geoData';
@@ -130,7 +130,7 @@ export default function Explore() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((l) => <ListingCard key={l.id} listing={l} />)}
+          {filtered.map((l) => <BarterCard key={l.id} listing={l} />)}
         </div>
       )}
     </div>
