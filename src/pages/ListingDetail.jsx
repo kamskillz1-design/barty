@@ -118,7 +118,12 @@ export default function ListingDetail() {
           </div>
           <p className="text-slate-600 leading-relaxed whitespace-pre-line">{listing.description}</p>
 
-          {listing.seeking_interests && listing.seeking_interests.length > 0 && (
+          {listing.is_seeking_anything ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <p className="text-sm font-semibold text-emerald-700">✨ {t.listing.openToAnything}</p>
+              <p className="mt-1 text-sm text-emerald-700/80">{t.listing.openToAnythingDesc}</p>
+            </div>
+          ) : listing.seeking_interests && listing.seeking_interests.length > 0 ? (
             <div>
               <p className="mb-1.5 text-sm font-semibold text-slate-700">{t.listing.lookingFor}</p>
               <div className="flex flex-wrap gap-1.5">
@@ -127,7 +132,7 @@ export default function ListingDetail() {
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
 
           {owner && (
             <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3">
@@ -147,7 +152,7 @@ export default function ListingDetail() {
               onClick={() => setProposing(true)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-600 transition"
             >
-              <ArrowRight className="h-4 w-4" /> {(listing.intent || 'offering') === 'seeking' ? t.listing.fulfillRequest : t.listing.proposeTrade}
+              <ArrowRight className="h-4 w-4" /> {listing.is_seeking_anything ? t.listing.counterOffer : (listing.intent || 'offering') === 'seeking' ? t.listing.fulfillRequest : t.listing.proposeTrade}
             </button>
           )}
         </div>
@@ -159,7 +164,7 @@ export default function ListingDetail() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-4" onClick={() => setProposing(false)}>
           <div className="w-full max-w-lg rounded-2xl bg-white p-5 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">{t.listing.proposeTrade}</h3>
+              <h3 className="text-lg font-bold text-slate-900">{listing.is_seeking_anything ? t.listing.counterOffer : t.listing.proposeTrade}</h3>
               <button onClick={() => setProposing(false)}><X className="h-5 w-5 text-slate-400" /></button>
             </div>
             <p className="mt-1 text-sm text-slate-500">{t.listing.valueHint}</p>

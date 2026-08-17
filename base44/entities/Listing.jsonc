@@ -4,7 +4,7 @@
   "properties": {
     "title": {
       "type": "string",
-      "description": "Title of the listing"
+      "description": "Title of the listing \u2014 what is being offered"
     },
     "description": {
       "type": "string",
@@ -24,7 +24,20 @@
       "items": {
         "type": "string"
       },
-      "description": "For seeking listings: items/services the user is looking for in exchange"
+      "description": "For offering listings: specific items/services the user wants in return. Empty when is_seeking_anything is true."
+    },
+    "is_seeking_anything": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the owner is open to any offer in return (Mode B / Open Exchange). seeking_interests is ignored."
+    },
+    "item_seeking_title": {
+      "type": "string",
+      "description": "Optional short title describing what is sought (when specific). Nullable when is_seeking_anything is true."
+    },
+    "item_seeking_description": {
+      "type": "string",
+      "description": "Optional detailed description of what is sought (when specific). Nullable when is_seeking_anything is true."
     },
     "type": {
       "type": "string",

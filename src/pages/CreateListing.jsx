@@ -17,7 +17,8 @@ export default function CreateListing() {
   const [form, setForm] = useState({
     title: '', description: '', intent: 'offering', type: 'good', category: 'electronics',
     country: user?.country || '', city: user?.city || '', town: user?.town || '',
-    baseline_value: 50, seeking_interests: []
+    baseline_value: 50, seeking_interests: [], is_seeking_anything: false,
+    item_seeking_title: '', item_seeking_description: ''
   });
   const [imageUrls, setImageUrls] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -61,7 +62,8 @@ export default function CreateListing() {
         baseline_value: Number(form.baseline_value) || 50,
         image_urls: imageUrls,
         status: 'available',
-        offering_user_id: user.id
+        offering_user_id: user.id,
+        seeking_interests: form.is_seeking_anything ? [] : form.seeking_interests
       });
       navigate('/my-listings');
     } finally {
@@ -99,28 +101,47 @@ export default function CreateListing() {
           <p className="mt-1.5 text-xs text-slate-400">{form.intent === 'seeking' ? t.listing.seekingHint : t.listing.offeringHint}</p>
         </div>
         <div className="sm:col-span-2">
-          <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.seekingField}</label>
-          <div className="flex gap-2">
-            <input
-              value={seekingInput}
-              onChange={(e) => setSeekingInput(e.target.value)}
-              placeholder={t.listing.seekingPlaceholder}
-              className={inputCls}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSeekingInterest(); } }}
-            />
-            <button type="button" onClick={addSeekingInterest} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 text-sm font-medium text-slate-700 hover:bg-slate-200">
-              {t.listing.seekingAdd}
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.returnMode}</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => set('is_seeking_anything', false)} className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${!form.is_seeking_anything ? 'border-sky-400 bg-sky-50 text-sky-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
+              {t.listing.modeSpecific}
+            </button>
+            <button type="button" onClick={() => set('is_seeking_anything', true)} className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${form.is_seeking_anything ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
+              ✨ {t.listing.modeAnything}
             </button>
           </div>
-          {form.seeking_interests.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {form.seeking_interests.map((s, i) => (
-                <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
-                  {s}
-                  <button type="button" onClick={() => removeSeekingInterest(i)}><X className="h-3.5 w-3.5 text-amber-500 hover:text-rose-500" /></button>
-                </span>
-              ))}
+          <p className="mt-1.5 text-xs text-slate-400">{form.is_seeking_anything ? t.listing.modeAnythingHint : t.listing.modeSpecificHint}</p>
+
+          {form.is_seeking_anything ? (
+            <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {t.listing.openToAnything}
             </div>
+          ) : (
+            <>
+              <label className="mt-3 mb-1.5 block text-sm font-medium text-slate-700">{t.listing.seekingField}</label>
+              <div className="flex gap-2">
+                <input
+                  value={seekingInput}
+                  onChange={(e) => setSeekingInput(e.target.value)}
+                  placeholder={t.listing.seekingPlaceholder}
+                  className={inputCls}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSeekingInterest(); } }}
+                />
+                <button type="button" onClick={addSeekingInterest} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 text-sm font-medium text-slate-700 hover:bg-slate-200">
+                  {t.listing.seekingAdd}
+                </button>
+              </div>
+              {form.seeking_interests.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {form.seeking_interests.map((s, i) => (
+                    <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+                      {s}
+                      <button type="button" onClick={() => removeSeekingInterest(i)}><X className="h-3.5 w-3.5 text-amber-500 hover:text-rose-500" /></button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
