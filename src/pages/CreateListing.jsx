@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SearchableSelect from '@/components/SearchableSelect';
+import MultiSearchableSelect from '@/components/MultiSearchableSelect';
 import { COUNTRIES, LANGUAGES } from '@/lib/geoData';
 import { ArrowLeft, ImagePlus, X, Save } from 'lucide-react';
 
@@ -17,7 +18,7 @@ export default function CreateListing() {
   const [form, setForm] = useState({
     title: '', description: '', intent: 'offering', type: 'good', category: 'electronics',
     country: user?.country || '', city: user?.city || '', town: user?.town || '',
-    language: '', baseline_value: 50
+    language: '', baseline_value: 50, seeking_interests: []
   });
   const [imageUrls, setImageUrls] = useState([]);
   const [imageInput, setImageInput] = useState('');
@@ -77,6 +78,18 @@ export default function CreateListing() {
           </div>
           <p className="mt-1.5 text-xs text-slate-400">{form.intent === 'seeking' ? t.listing.seekingHint : t.listing.offeringHint}</p>
         </div>
+        {form.intent === 'seeking' && (
+          <div className="sm:col-span-2">
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.seekingField}</label>
+            <MultiSearchableSelect
+              options={CATEGORY_KEYS.map((k) => t.categories[k])}
+              value={form.seeking_interests}
+              onChange={(v) => set('seeking_interests', v)}
+              placeholder={t.listing.seekingPlaceholder}
+              addLabel={t.listing.seekingAdd}
+            />
+          </div>
+        )}
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.type}</label>

@@ -19,6 +19,13 @@
       "default": "offering",
       "description": "Whether the user is offering this item/service or seeking it"
     },
+    "seeking_interests": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "For seeking listings: items/services the user is looking for in exchange"
+    },
     "type": {
       "type": "string",
       "enum": [

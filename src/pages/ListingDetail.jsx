@@ -118,6 +118,17 @@ export default function ListingDetail() {
           </div>
           <p className="text-slate-600 leading-relaxed whitespace-pre-line">{listing.description}</p>
 
+          {listing.intent === 'seeking' && listing.seeking_interests && listing.seeking_interests.length > 0 && (
+            <div>
+              <p className="mb-1.5 text-sm font-semibold text-slate-700">{t.listing.lookingFor}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {listing.seeking_interests.map((s) => (
+                  <span key={s} className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {owner && (
             <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sky-700 font-semibold">
