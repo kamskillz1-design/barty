@@ -78,18 +78,16 @@ export default function CreateListing() {
           </div>
           <p className="mt-1.5 text-xs text-slate-400">{form.intent === 'seeking' ? t.listing.seekingHint : t.listing.offeringHint}</p>
         </div>
-        {form.intent === 'seeking' && (
-          <div className="sm:col-span-2">
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.seekingField}</label>
-            <MultiSearchableSelect
-              options={CATEGORY_KEYS.map((k) => t.categories[k])}
-              value={form.seeking_interests}
-              onChange={(v) => set('seeking_interests', v)}
-              placeholder={t.listing.seekingPlaceholder}
-              addLabel={t.listing.seekingAdd}
-            />
-          </div>
-        )}
+        <div className="sm:col-span-2">
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.seekingField}</label>
+          <MultiSearchableSelect
+            options={CATEGORY_KEYS.map((k) => t.categories[k])}
+            value={form.seeking_interests}
+            onChange={(v) => set('seeking_interests', v)}
+            placeholder={t.listing.seekingPlaceholder}
+            addLabel={t.listing.seekingAdd}
+          />
+        </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.type}</label>

@@ -118,7 +118,7 @@ export default function ListingDetail() {
           </div>
           <p className="text-slate-600 leading-relaxed whitespace-pre-line">{listing.description}</p>
 
-          {listing.intent === 'seeking' && listing.seeking_interests && listing.seeking_interests.length > 0 && (
+          {listing.seeking_interests && listing.seeking_interests.length > 0 && (
             <div>
               <p className="mb-1.5 text-sm font-semibold text-slate-700">{t.listing.lookingFor}</p>
               <div className="flex flex-wrap gap-1.5">
