@@ -4,14 +4,13 @@ import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import LanguagePicker from '@/components/LanguagePicker';
-import VerifyIdDialog from '@/components/VerifyIdDialog';
 import ImpactStats from '@/components/ImpactStats';
-import { ShieldCheck, Star, Plus, MapPin } from 'lucide-react';
+import { Star, Plus, MapPin } from 'lucide-react';
 
 export default function Profile() {
   const { t, lang, setLang } = useI18n();
-  const { user, logout, refreshUser } = useAuth();
-  const [form, setForm] = useState({ preferred_language: lang, country: '', city: '', town: '', bio: '', verified: false, avatar_url: '' });
+  const { user, logout } = useAuth();
+  const [form, setForm] = useState({ preferred_language: lang, country: '', city: '', town: '', bio: '', avatar_url: '' });
   const [listings, setListings] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewers, setReviewers] = useState({});
@@ -26,7 +25,6 @@ export default function Profile() {
       city: user.city || '',
       town: user.town || '',
       bio: user.bio || '',
-      verified: user.verified || false,
       avatar_url: user.avatar_url || ''
     });
     (async () => {
@@ -58,13 +56,6 @@ export default function Profile() {
     }
   };
 
-  const [verifyOpen, setVerifyOpen] = useState(false);
-
-  const handleVerified = async () => {
-    setForm((f) => ({ ...f, verified: true }));
-    if (refreshUser) await refreshUser();
-  };
-
   const avgRating = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : null;
   const inputCls = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white';
 
@@ -78,14 +69,11 @@ export default function Profile() {
           <div className="flex-1">
             <h1 className="text-xl font-bold text-slate-900">{user?.full_name || '—'}</h1>
             <p className="text-sm text-slate-400">{user?.email}</p>
-            <div className="mt-1.5 flex items-center gap-3">
-              {form.verified ? (
-                <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600"><ShieldCheck className="h-4 w-4" /> {t.profile.verified}</span>
-              ) : (
-                <button onClick={() => setVerifyOpen(true)} className="inline-flex items-center gap-1 text-xs font-semibold text-sky-600 hover:underline">{t.profile.verify}</button>
-              )}
-              {avgRating && <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600"><Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> {avgRating}</span>}
-            </div>
+            {avgRating && (
+              <div className="mt-1.5 flex items-center gap-1 text-xs font-medium text-amber-600">
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> {avgRating}
+              </div>
+            )}
           </div>
         </div>
 
@@ -166,7 +154,6 @@ export default function Profile() {
         )}
       </div>
 
-      <VerifyIdDialog open={verifyOpen} onOpenChange={setVerifyOpen} onVerified={handleVerified} defaultValue={form.country} />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SafetyBanner from '@/components/SafetyBanner';
 import ValueMatchIndicator from '@/components/ValueMatchIndicator';
-import { ArrowLeft, MapPin, Wrench, Package, ShieldCheck, ArrowRight, Check, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 
 export default function ListingDetail() {
@@ -120,11 +120,6 @@ export default function ListingDetail() {
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-slate-900">{owner.full_name || '—'}</p>
-                {owner.verified && (
-                  <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
-                    <ShieldCheck className="h-3.5 w-3.5" /> {t.profile.verified}
-                  </span>
-                )}
               </div>
             </div>
           )}
