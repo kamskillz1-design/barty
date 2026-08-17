@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SearchableSelect from '@/components/SearchableSelect';
-import MultiSearchableSelect from '@/components/MultiSearchableSelect';
+
 import { COUNTRIES, LANGUAGES } from '@/lib/geoData';
 import { ArrowLeft, ImagePlus, X, Save } from 'lucide-react';
 
@@ -21,16 +21,37 @@ export default function CreateListing() {
     language: '', baseline_value: 50, seeking_interests: []
   });
   const [imageUrls, setImageUrls] = useState([]);
-  const [imageInput, setImageInput] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [seekingInput, setSeekingInput] = useState('');
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
-  const addImage = () => {
-    if (!imageInput.trim()) return;
-    setImageUrls((arr) => [...arr, imageInput.trim()]);
-    setImageInput('');
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const uploaded = await Promise.all(
+        files.map((file) => base44.integrations.Core.UploadFile({ file }))
+      );
+      setImageUrls((arr) => [...arr, ...uploaded.map((u) => u.file_url).filter(Boolean)]);
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
   };
   const removeImage = (i) => setImageUrls((arr) => arr.filter((_, idx) => idx !== i));
+
+  const addSeekingInterest = () => {
+    const val = seekingInput.trim();
+    if (!val) return;
+    if (!form.seeking_interests.includes(val)) {
+      set('seeking_interests', [...form.seeking_interests, val]);
+    }
+    setSeekingInput('');
+  };
+  const removeSeekingInterest = (i) =>
+    set('seeking_interests', form.seeking_interests.filter((_, idx) => idx !== i));
 
   const submit = async (e) => {
     e.preventDefault();
@@ -80,13 +101,28 @@ export default function CreateListing() {
         </div>
         <div className="sm:col-span-2">
           <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.seekingField}</label>
-          <MultiSearchableSelect
-            options={CATEGORY_KEYS.map((k) => t.categories[k])}
-            value={form.seeking_interests}
-            onChange={(v) => set('seeking_interests', v)}
-            placeholder={t.listing.seekingPlaceholder}
-            addLabel={t.listing.seekingAdd}
-          />
+          <div className="flex gap-2">
+            <input
+              value={seekingInput}
+              onChange={(e) => setSeekingInput(e.target.value)}
+              placeholder={t.listing.seekingPlaceholder}
+              className={inputCls}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSeekingInterest(); } }}
+            />
+            <button type="button" onClick={addSeekingInterest} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 text-sm font-medium text-slate-700 hover:bg-slate-200">
+              {t.listing.seekingAdd}
+            </button>
+          </div>
+          {form.seeking_interests.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {form.seeking_interests.map((s, i) => (
+                <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">
+                  {s}
+                  <button type="button" onClick={() => removeSeekingInterest(i)}><X className="h-3.5 w-3.5 text-amber-500 hover:text-rose-500" /></button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
@@ -124,18 +160,19 @@ export default function CreateListing() {
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.images}</label>
-          <div className="flex gap-2">
-            <input value={imageInput} onChange={(e) => setImageInput(e.target.value)} placeholder={t.listing.addImage} className={inputCls} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addImage(); } }} />
-            <button type="button" onClick={addImage} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 text-sm font-medium text-slate-700 hover:bg-slate-200">
-              <ImagePlus className="h-4 w-4" />
-            </button>
-          </div>
+          <label className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
+            <ImagePlus className="h-4 w-4" />
+            {uploading ? t.common.loading : t.listing.addImage}
+            <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
+          </label>
           {imageUrls.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {imageUrls.map((u, i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
-                  <span className="max-w-[180px] truncate">{u}</span>
-                  <button type="button" onClick={() => removeImage(i)}><X className="h-3.5 w-3.5 text-slate-400 hover:text-rose-500" /></button>
+                <span key={u} className="relative inline-block h-16 w-16 overflow-hidden rounded-lg bg-slate-100">
+                  <img src={u} alt="" className="h-full w-full object-cover" />
+                  <button type="button" onClick={() => removeImage(i)} className="absolute end-0 top-0 flex h-5 w-5 items-center justify-center rounded-bl-lg bg-rose-500 text-white">
+                    <X className="h-3 w-3" />
+                  </button>
                 </span>
               ))}
             </div>
