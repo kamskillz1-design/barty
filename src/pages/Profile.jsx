@@ -4,7 +4,9 @@ import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import LanguagePicker from '@/components/LanguagePicker';
+import SearchableSelect from '@/components/SearchableSelect';
 import ImpactStats from '@/components/ImpactStats';
+import { COUNTRIES } from '@/lib/geoData';
 import { Star, Plus, MapPin } from 'lucide-react';
 
 export default function Profile() {
@@ -84,7 +86,7 @@ export default function Profile() {
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.profile.country}</label>
-            <input value={form.country} onChange={(e) => set('country', e.target.value)} className={inputCls} />
+            <SearchableSelect options={COUNTRIES} value={form.country} onChange={(v) => set('country', v)} placeholder={t.profile.country} allLabel={t.search.allLocations} />
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.profile.city}</label>
