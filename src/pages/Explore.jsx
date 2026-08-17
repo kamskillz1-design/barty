@@ -10,8 +10,7 @@ import { COUNTRIES } from '@/lib/geoData';
 import { Search, Plus, Package, Scale, Globe2, Sparkles, SlidersHorizontal } from 'lucide-react';
 import GlobalImpactCounter from '@/components/GlobalImpactCounter';
 import LocalDiscovery from '@/components/LocalDiscovery';
-
-const CATEGORY_KEYS = ['electronics', 'clothing', 'home', 'tools', 'books', 'toys', 'sports', 'tutoring', 'repairs', 'design', 'transport', 'cooking', 'other'];
+import { CATEGORY_KEYS } from '@/lib/categories';
 
 export default function Explore() {
   const { t } = useI18n();

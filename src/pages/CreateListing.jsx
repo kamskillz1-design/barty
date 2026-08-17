@@ -6,9 +6,8 @@ import { useAuth } from '@/lib/AuthContext';
 import SearchableSelect from '@/components/SearchableSelect';
 
 import { COUNTRIES } from '@/lib/geoData';
+import { CATEGORY_KEYS } from '@/lib/categories';
 import { ArrowLeft, ImagePlus, X, Save } from 'lucide-react';
-
-const CATEGORY_KEYS = ['electronics', 'clothing', 'home', 'tools', 'books', 'toys', 'sports', 'tutoring', 'repairs', 'design', 'transport', 'cooking', 'other'];
 
 export default function CreateListing() {
   const { t } = useI18n();
