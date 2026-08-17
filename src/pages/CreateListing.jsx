@@ -5,7 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SearchableSelect from '@/components/SearchableSelect';
 
-import { COUNTRIES, LANGUAGES } from '@/lib/geoData';
+import { COUNTRIES } from '@/lib/geoData';
 import { ArrowLeft, ImagePlus, X, Save } from 'lucide-react';
 
 const CATEGORY_KEYS = ['electronics', 'clothing', 'home', 'tools', 'books', 'toys', 'sports', 'tutoring', 'repairs', 'design', 'transport', 'cooking', 'other'];
@@ -18,7 +18,7 @@ export default function CreateListing() {
   const [form, setForm] = useState({
     title: '', description: '', intent: 'offering', type: 'good', category: 'electronics',
     country: user?.country || '', city: user?.city || '', town: user?.town || '',
-    language: '', baseline_value: 50, seeking_interests: []
+    baseline_value: 50, seeking_interests: []
   });
   const [imageUrls, setImageUrls] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -144,10 +144,7 @@ export default function CreateListing() {
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.country}</label>
             <SearchableSelect options={COUNTRIES} value={form.country} onChange={(v) => set('country', v)} placeholder={t.listing.country} />
           </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.language}</label>
-            <SearchableSelect options={LANGUAGES} value={form.language} onChange={(v) => set('language', v)} placeholder={t.listing.language} />
-          </div>
+
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.city}</label>
             <input value={form.city} onChange={(e) => set('city', e.target.value)} className={inputCls} />
