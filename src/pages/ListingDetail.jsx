@@ -5,7 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SafetyBanner from '@/components/SafetyBanner';
 import ValueMatchIndicator from '@/components/ValueMatchIndicator';
-import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X, Pencil } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 
 export default function ListingDetail() {
@@ -146,7 +146,12 @@ export default function ListingDetail() {
           )}
 
           {isOwner ? (
-            <div className="rounded-2xl bg-slate-100 px-4 py-3 text-sm text-slate-600">{t.listing.myListing}</div>
+            <button
+              onClick={() => navigate(`/listings/${listing.id}/edit`)}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
+            >
+              <Pencil className="h-4 w-4" /> {t.listing.edit}
+            </button>
           ) : (
             <button
               onClick={() => setProposing(true)}

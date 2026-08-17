@@ -62,7 +62,7 @@ export default function MyListings() {
                     {l.status}
                   </span>
                   <div className="flex gap-2">
-                    <Link to={`/listings/${l.id}`} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><Pencil className="h-4 w-4" /></Link>
+                    <Link to={`/listings/${l.id}/edit`} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"><Pencil className="h-4 w-4" /></Link>
                     <button onClick={() => remove(l.id)} className="rounded-lg p-1.5 text-slate-500 hover:bg-rose-50 hover:text-rose-500"><Trash2 className="h-4 w-4" /></button>
                   </div>
                 </div>

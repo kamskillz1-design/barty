@@ -23,7 +23,10 @@ export default function BarterCard({ listing }) {
   const offeredImage = listing.image_urls?.[0];
   const soughtTitle = isSeekingIntent
     ? listing.title
-    : (listing.item_seeking_title || listing.seeking_interests?.[0] || '');
+    : (listing.item_seeking_title
+        || listing.item_seeking_description
+        || (listing.seeking_interests?.length ? listing.seeking_interests.join(', ') : ''));
+  const soughtDesc = !isSeekingIntent ? (listing.item_seeking_description || '') : '';
   const openToAnything = !!listing.is_seeking_anything;
 
   const loc = [listing.city, listing.country].filter(Boolean).join(', ');
@@ -89,7 +92,10 @@ export default function BarterCard({ listing }) {
               ✨ {t.listing.seekingAnythingBadge}
             </span>
           ) : soughtTitle ? (
-            <p className="line-clamp-2 text-sm font-semibold text-slate-900">{soughtTitle}</p>
+            <>
+              <p className="line-clamp-2 text-sm font-semibold text-slate-900">{soughtTitle}</p>
+              {soughtDesc && <p className="mt-0.5 line-clamp-1 text-xs text-slate-400">{soughtDesc}</p>}
+            </>
           ) : (
             <span className="text-sm italic text-slate-400">{t.listing.lookingFor}</span>
           )}

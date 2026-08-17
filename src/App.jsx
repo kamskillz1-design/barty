@@ -15,6 +15,7 @@ import ForgotPassword from '@/pages/ForgotPassword';
 import ResetPassword from '@/pages/ResetPassword';
 import Explore from '@/pages/Explore';
 import CreateListing from '@/pages/CreateListing';
+import EditListing from '@/pages/EditListing';
 import ListingDetail from '@/pages/ListingDetail';
 import MyListings from '@/pages/MyListings';
 import Trades from '@/pages/Trades';
@@ -59,6 +60,7 @@ const AuthenticatedApp = () => {
             <Route path="/" element={<Explore />} />
             <Route path="/explore" element={<Explore />} />
             <Route path="/listings/new" element={<CreateListing />} />
+            <Route path="/listings/:id/edit" element={<EditListing />} />
             <Route path="/listings/:id" element={<ListingDetail />} />
             <Route path="/my-listings" element={<MyListings />} />
             <Route path="/trades" element={<Trades />} />
