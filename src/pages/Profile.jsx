@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
-import LanguagePicker from '@/components/LanguagePicker';
 import SearchableSelect from '@/components/SearchableSelect';
 import ImpactStats from '@/components/ImpactStats';
 import { COUNTRIES } from '@/lib/geoData';
@@ -80,10 +79,6 @@ export default function Profile() {
         </div>
 
         <div className="mt-6 grid sm:grid-cols-2 gap-4">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.profile.language}</label>
-            <LanguagePicker variant="form" value={form.preferred_language} onChange={(v) => set('preferred_language', v)} placeholder={t.profile.language} />
-          </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.profile.country}</label>
             <SearchableSelect options={COUNTRIES} value={form.country} onChange={(v) => set('country', v)} placeholder={t.profile.country} allLabel={t.search.allLocations} />
