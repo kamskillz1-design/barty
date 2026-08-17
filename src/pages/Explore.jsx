@@ -24,6 +24,7 @@ export default function Explore() {
   const [category, setCategory] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [townFilter, setTownFilter] = useState('');
+  const [intentFilter, setIntentFilter] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -45,11 +46,12 @@ export default function Explore() {
       if (ql && !(`${l.title || ''} ${l.description || ''}`.toLowerCase().includes(ql))) return false;
       if (category && l.category !== category) return false;
       if (typeFilter && l.type !== typeFilter) return false;
+      if (intentFilter && (l.intent || 'offering') !== intentFilter) return false;
       if (countryFilter && (l.country || '').toLowerCase() !== countryFilter.toLowerCase()) return false;
       if (tl && !(`${l.town || ''} ${l.city || ''}`.toLowerCase().includes(tl))) return false;
       return true;
     });
-  }, [listings, q, category, typeFilter, countryFilter, townFilter]);
+  }, [listings, q, category, typeFilter, intentFilter, countryFilter, townFilter]);
 
   return (
     <div className="space-y-7">
@@ -98,6 +100,11 @@ export default function Explore() {
           />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <select value={intentFilter} onChange={(e) => setIntentFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
+            <option value="">{t.search.allIntents}</option>
+            <option value="offering">{t.search.offerings}</option>
+            <option value="seeking">{t.search.seekings}</option>
+          </select>
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
             <option value="">{t.search.allTypes}</option>
             <option value="good">{t.search.goods}</option>

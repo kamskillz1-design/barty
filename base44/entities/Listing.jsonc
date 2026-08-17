@@ -10,6 +10,15 @@
       "type": "string",
       "description": "Detailed description"
     },
+    "intent": {
+      "type": "string",
+      "enum": [
+        "offering",
+        "seeking"
+      ],
+      "default": "offering",
+      "description": "Whether the user is offering this item/service or seeking it"
+    },
     "type": {
       "type": "string",
       "enum": [

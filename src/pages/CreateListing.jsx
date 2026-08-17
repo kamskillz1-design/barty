@@ -15,7 +15,7 @@ export default function CreateListing() {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    title: '', description: '', type: 'good', category: 'electronics',
+    title: '', description: '', intent: 'offering', type: 'good', category: 'electronics',
     country: user?.country || '', city: user?.city || '', town: user?.town || '',
     language: '', baseline_value: 50
   });
@@ -64,6 +64,18 @@ export default function CreateListing() {
         <div>
           <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.description}</label>
           <textarea required rows={4} value={form.description} onChange={(e) => set('description', e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.intent}</label>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => set('intent', 'offering')} className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${form.intent === 'offering' ? 'border-sky-400 bg-sky-50 text-sky-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
+              {t.listing.offering}
+            </button>
+            <button type="button" onClick={() => set('intent', 'seeking')} className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${form.intent === 'seeking' ? 'border-amber-400 bg-amber-50 text-amber-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
+              {t.listing.seeking}
+            </button>
+          </div>
+          <p className="mt-1.5 text-xs text-slate-400">{form.intent === 'seeking' ? t.listing.seekingHint : t.listing.offeringHint}</p>
         </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div>

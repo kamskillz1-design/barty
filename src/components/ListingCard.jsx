@@ -17,8 +17,8 @@ export default function ListingCard({ listing }) {
             {listing.type === 'service' ? <Wrench className="h-10 w-10" /> : <Package className="h-10 w-10" />}
           </div>
         )}
-        <span className={`absolute top-2.5 start-2.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${listing.type === 'service' ? 'bg-sky-500 text-white' : 'bg-white/90 text-slate-700'}`}>
-          {listing.type === 'service' ? t.listing.service : t.listing.good}
+        <span className={`absolute top-2.5 start-2.5 rounded-full px-2.5 py-1 text-[11px] font-semibold ${(listing.intent || 'offering') === 'seeking' ? 'bg-amber-500 text-white' : 'bg-sky-500 text-white'}`}>
+          {(listing.intent || 'offering') === 'seeking' ? `🔍 ${t.listing.seeking}` : `🎁 ${t.listing.offering}`}
         </span>
       </div>
       <div className="p-4">

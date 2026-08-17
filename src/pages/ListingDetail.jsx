@@ -102,9 +102,14 @@ export default function ListingDetail() {
 
         <div className="space-y-4">
           <div>
-            <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${listing.type === 'service' ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600'}`}>
-              {listing.type === 'service' ? t.listing.service : t.listing.good}
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${(listing.intent || 'offering') === 'seeking' ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-700'}`}>
+                {(listing.intent || 'offering') === 'seeking' ? t.listing.seeking : t.listing.offering}
+              </span>
+              <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${listing.type === 'service' ? 'bg-slate-100 text-slate-600' : 'bg-slate-100 text-slate-600'}`}>
+                {listing.type === 'service' ? t.listing.service : t.listing.good}
+              </span>
+            </div>
             <h1 className="mt-3 text-2xl font-bold text-slate-900">{listing.title}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
               <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{t.categories[listing.category] || listing.category}</span>
@@ -131,7 +136,7 @@ export default function ListingDetail() {
               onClick={() => setProposing(true)}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-600 transition"
             >
-              <ArrowRight className="h-4 w-4" /> {t.listing.proposeTrade}
+              <ArrowRight className="h-4 w-4" /> {(listing.intent || 'offering') === 'seeking' ? t.listing.fulfillRequest : t.listing.proposeTrade}
             </button>
           )}
         </div>
