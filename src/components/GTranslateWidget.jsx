@@ -20,6 +20,23 @@ export default function GTranslateWidget() {
     s.src = 'https://cdn.gtranslate.net/widgets/latest/float.js';
     s.defer = true;
     document.body.appendChild(s);
+
+    // GTranslate's in-place English restore is flaky in React, so on an English
+    // pick we clear the googtrans cookie and reload to get the clean English DOM.
+    const onClick = (e) => {
+      let el = e.target;
+      while (el && el !== document.body) {
+        if (el.dataset && el.dataset.gtLang === 'en') {
+          document.cookie = 'googtrans=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+          document.cookie = 'googtrans=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=' + window.location.hostname;
+          window.location.reload();
+          break;
+        }
+        el = el.parentElement;
+      }
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
   }, []);
 
   return <div className="gtranslate_engine" />;
