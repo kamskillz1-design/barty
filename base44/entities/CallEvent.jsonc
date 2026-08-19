@@ -1,0 +1,106 @@
+{
+  "name": "CallEvent",
+  "type": "object",
+  "properties": {
+    "trade_id": {
+      "type": "string",
+      "description": "Trade this call event belongs to"
+    },
+    "call_id": {
+      "type": "string",
+      "description": "Call session id this event relates to"
+    },
+    "user_id": {
+      "type": "string",
+      "description": "User who triggered the event"
+    },
+    "participants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Both trade participant user ids used for RLS"
+    },
+    "event": {
+      "type": "string",
+      "enum": [
+        "video_started",
+        "voice_started",
+        "ended",
+        "missed",
+        "declined"
+      ],
+      "description": "Call lifecycle event"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "video",
+        "voice"
+      ],
+      "description": "Call mode"
+    }
+  },
+  "required": [
+    "trade_id",
+    "call_id",
+    "user_id",
+    "participants",
+    "event",
+    "mode"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "data.participants": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "$or": [
+        {
+          "data.participants": {
+            "$in": [
+              "{{user.id}}"
+            ]
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
