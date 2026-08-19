@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
+import { getIceServers } from '@/lib/webrtcConfig';
 
-const ICE_SERVERS = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+const STUN_ONLY = [{ urls: 'stun:stun.l.google.com:19302' }];
 const MISSED_TIMEOUT = 35000; // recipient has ~35s to answer before the call is marked missed
 
 /**
@@ -97,8 +98,8 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
 
   const hardReset = cleanupCall;
 
-  const buildPeer = () => {
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+  const buildPeer = (iceServers) => {
+    const pc = new RTCPeerConnection({ iceServers: iceServers && iceServers.length ? iceServers : STUN_ONLY });
     pcRef.current = pc;
     pc.ontrack = (ev) => {
       // Buffer the remote track into a persistent stream. "Connected" status is
@@ -139,7 +140,8 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
       hardReset();
       return;
     }
-    const pc = buildPeer();
+    const iceServers = await getIceServers();
+    const pc = buildPeer(iceServers);
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     try {
       const offer = await pc.createOffer();
@@ -177,7 +179,8 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
       hardReset();
       return;
     }
-    const pc = buildPeer();
+    const iceServers = await getIceServers();
+    const pc = buildPeer(iceServers);
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     try {
       const offerRecs = await base44.entities.CallSignal.filter({ call_id: inc.callId, kind: 'offer', trade_id: tradeId }, '-created_date', 5);
@@ -232,13 +235,22 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
     if (sig.from_user_id === meId) return; // ignore our own outgoing signals
     if (sig.kind === 'offer') {
       if (statusRef.current === 'idle' && !incomingRef.current) {
-        setIncomingBoth({ callId: sig.call_id, mode: sig.mode, fromUserId: sig.from_user_id });
+        // Only ring for offers still within the ringing window, so idle polling
+        // can't resurrect an offer from an already-ended/missed call.
+        const age = Date.now() - new Date(sig.created_date).getTime();
+        if (age < MISSED_TIMEOUT) {
+          setIncomingBoth({ callId: sig.call_id, mode: sig.mode, fromUserId: sig.from_user_id });
+        }
       }
     } else if (sig.kind === 'ice') {
+      // Ignore ICE candidates not for the active call (e.g. stale records the
+      // idle poll surfaces from a previous call) so they can't corrupt a new one.
+      if (!callIdRef.current || sig.call_id !== callIdRef.current) return;
       const pc = pcRef.current;
       if (pc && pc.currentRemoteDescription) { try { await pc.addIceCandidate(JSON.parse(sig.payload)); } catch {} }
       else pendingIceRef.current.push(sig.payload);
     } else if (sig.kind === 'answer') {
+      if (sig.call_id !== callIdRef.current) return; // not for our call
       const pc = pcRef.current;
       if (pc && !pc.currentRemoteDescription) {
         try { await pc.setRemoteDescription(JSON.parse(sig.payload)); } catch {}
@@ -246,6 +258,9 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
         pendingIceRef.current = [];
       }
     } else if (sig.kind === 'decline' || sig.kind === 'end') {
+      // Only act on terminal signals for our current call or pending ring, so a
+      // stale record from a prior call can't tear down a live one.
+      if (sig.call_id !== callIdRef.current && incomingRef.current?.callId !== sig.call_id) return;
       setIncomingBoth(null);
       cleanupCall();
     }
@@ -261,24 +276,31 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
     return () => { unsub && unsub(); };
   }, [tradeId]);
 
-  // Safety net: poll for CallSignal records this user may have missed (e.g. an
-  // answer/ice dropped by the realtime layer while the call is mid-setup).
-  // Only runs while a call is active or an incoming ring is pending.
+  // Safety net: poll for CallSignal records this user may have missed. The
+  // realtime subscription is the primary fast path, but signals can be dropped
+  // when a tab is backgrounded or briefly reconnects. This poll ALSO runs
+  // while idle (cadence ~3s) so a recipient never silently misses an incoming
+  // ring, and tightens to ~1.5s once a call is active or ringing.
   useEffect(() => {
     if (!tradeId) return;
+    let active = true;
+    let timer = null;
     const poll = async () => {
-      if (statusRef.current === 'idle' && !incomingRef.current) return;
       try {
         const recs = await base44.entities.CallSignal.filter({ trade_id: tradeId }, '-created_date', 50);
-        if (!recs?.length) return;
-        const ordered = recs.slice().reverse(); // oldest first
-        for (const sig of ordered) {
-          if (handleSignalRef.current) await handleSignalRef.current(sig);
+        if (recs?.length) {
+          const ordered = recs.slice().reverse(); // oldest first
+          for (const sig of ordered) {
+            if (handleSignalRef.current) await handleSignalRef.current(sig);
+          }
         }
       } catch { /* polling best-effort */ }
+      if (!active) return;
+      const next = (statusRef.current === 'idle' && !incomingRef.current) ? 3000 : 1500;
+      timer = setTimeout(poll, next);
     };
-    const iv = setInterval(poll, 1500);
-    return () => clearInterval(iv);
+    timer = setTimeout(poll, 3000);
+    return () => { active = false; if (timer) clearTimeout(timer); };
   }, [tradeId]);
 
   // Tear down any live call when the chat unmounts.
