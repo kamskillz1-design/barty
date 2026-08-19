@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeftRight, Package, MapPin, User, Globe } from 'lucide-react';
 import moment from 'moment';
 import { useI18n } from '@/lib/i18n';
+import { base44 } from '@/api/base44Client';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
+
+// In-memory cache of owner user id → display name shared across all cards.
+const ownerNameCache = {};
 
 /**
  * BarterCard — renders ONE listing as a single trade proposition: the HAVE
@@ -13,6 +17,24 @@ import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/c
  */
 export default function BarterCard({ listing }) {
   const { t } = useI18n();
+  const [ownerName, setOwnerName] = useState(
+    (listing.offering_user_id && ownerNameCache[listing.offering_user_id]) || ''
+  );
+
+  useEffect(() => {
+    const id = listing.offering_user_id;
+    if (!id) return;
+    if (ownerNameCache[id]) { setOwnerName(ownerNameCache[id]); return; }
+    let alive = true;
+    base44.asServiceRole.entities.User.get(id)
+      .then((u) => {
+        const name = u?.full_name || '';
+        ownerNameCache[id] = name;
+        if (alive) setOwnerName(name);
+      })
+      .catch(() => { /* restricted — fall back to generic label */ });
+    return () => { alive = false; };
+  }, [listing.offering_user_id]);
 
   const haveType = EXCHANGE_TYPES.find((x) => x.id === listing.have_exchange_type);
   const wantType = EXCHANGE_TYPES.find((x) => x.id === listing.want_exchange_type);
@@ -39,7 +61,7 @@ export default function BarterCard({ listing }) {
           <User className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-slate-700">{t.common.member}</p>
+          <p className="truncate text-sm font-medium text-slate-700">{ownerName || t.common.member}</p>
           <p className="text-xs text-slate-400">{listing.created_date ? moment(listing.created_date).fromNow() : ''}</p>
         </div>
         {exchLoc && (
