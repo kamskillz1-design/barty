@@ -36,6 +36,8 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
   const incomingRef = useRef(null);
   const timerRef = useRef(null);
   const missedTimerRef = useRef(null);
+  const seenIdsRef = useRef(new Set());
+  const handleSignalRef = useRef(null);
 
   const setStatusBoth = (s) => { statusRef.current = s; setStatus(s); };
   const setIncomingBoth = (v) => { incomingRef.current = v; setIncoming(v); };
@@ -95,9 +97,9 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
     const pc = new RTCPeerConnection(ICE_SERVERS);
     pcRef.current = pc;
     pc.ontrack = (ev) => {
-      const r = new MediaStream(ev.streams[0].getTracks());
-      remoteRef.current = r;
-      setRemoteStream(r);
+      if (!remoteRef.current) remoteRef.current = new MediaStream();
+      remoteRef.current.addTrack(ev.track);
+      setRemoteStream(new MediaStream(remoteRef.current.getTracks()));
       if (statusRef.current === 'connecting') onConnected();
     };
     pc.onicecandidate = (ev) => { if (ev.candidate) sendSignal('ice', JSON.stringify(ev.candidate)); };
@@ -215,36 +217,64 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
     if (t) { t.enabled = !t.enabled; setVideoOn(t.enabled); }
   };
 
-  // Signaling subscription (app-wide; filtered to this trade + counterpart).
+  // Shared signal handler — used by both the realtime subscription (fast path)
+  // and the polling backstop (safety net). Dedupes by record id so the same
+  // signal is never applied twice even if both paths deliver it.
+  const handleSignal = async (sig) => {
+    if (!sig || sig.trade_id !== tradeId) return;
+    if (sig.id && seenIdsRef.current.has(sig.id)) return;
+    if (sig.id) seenIdsRef.current.add(sig.id);
+    if (sig.from_user_id === meId) return; // ignore our own outgoing signals
+    if (sig.kind === 'offer') {
+      if (statusRef.current === 'idle' && !incomingRef.current) {
+        setIncomingBoth({ callId: sig.call_id, mode: sig.mode, fromUserId: sig.from_user_id });
+      }
+    } else if (sig.kind === 'ice') {
+      const pc = pcRef.current;
+      if (pc && pc.currentRemoteDescription) { try { await pc.addIceCandidate(JSON.parse(sig.payload)); } catch {} }
+      else pendingIceRef.current.push(sig.payload);
+    } else if (sig.kind === 'answer') {
+      const pc = pcRef.current;
+      if (pc && !pc.currentRemoteDescription) {
+        try { await pc.setRemoteDescription(JSON.parse(sig.payload)); } catch {}
+        for (const c of pendingIceRef.current) { try { await pc.addIceCandidate(JSON.parse(c)); } catch {} }
+        pendingIceRef.current = [];
+        if (statusRef.current === 'connecting') onConnected();
+      }
+    } else if (sig.kind === 'decline' || sig.kind === 'end') {
+      setIncomingBoth(null);
+      cleanupCall();
+    }
+  };
+  handleSignalRef.current = handleSignal;
+
+  // Primary fast path: realtime delivery of CallSignal create events.
   useEffect(() => {
     if (!tradeId) return;
-    const handler = async (event) => {
-      const sig = event.data;
-      if (!sig || sig.trade_id !== tradeId) return;
-      if (sig.from_user_id === meId) return; // ignore our own outgoing signals
-      if (sig.kind === 'offer') {
-        if (statusRef.current === 'idle' && !incomingRef.current) {
-          setIncomingBoth({ callId: sig.call_id, mode: sig.mode, fromUserId: sig.from_user_id });
-        }
-      } else if (sig.kind === 'ice') {
-        const pc = pcRef.current;
-        if (pc && pc.currentRemoteDescription) { try { await pc.addIceCandidate(JSON.parse(sig.payload)); } catch {} }
-        else pendingIceRef.current.push(sig.payload);
-      } else if (sig.kind === 'answer') {
-        const pc = pcRef.current;
-        if (pc && !pc.currentRemoteDescription) {
-          try { await pc.setRemoteDescription(JSON.parse(sig.payload)); } catch {}
-          for (const c of pendingIceRef.current) { try { await pc.addIceCandidate(JSON.parse(c)); } catch {} }
-          pendingIceRef.current = [];
-          if (statusRef.current === 'connecting') onConnected();
-        }
-      } else if (sig.kind === 'decline' || sig.kind === 'end') {
-        setIncomingBoth(null);
-        cleanupCall();
-      }
-    };
-    const unsub = base44.entities.CallSignal.subscribe(handler);
+    const unsub = base44.entities.CallSignal.subscribe((event) => {
+      if (handleSignalRef.current) handleSignalRef.current(event.data);
+    });
     return () => { unsub && unsub(); };
+  }, [tradeId]);
+
+  // Safety net: poll for CallSignal records this user may have missed (e.g. an
+  // answer/ice dropped by the realtime layer while the call is mid-setup).
+  // Only runs while a call is active or an incoming ring is pending.
+  useEffect(() => {
+    if (!tradeId) return;
+    const poll = async () => {
+      if (statusRef.current === 'idle' && !incomingRef.current) return;
+      try {
+        const recs = await base44.entities.CallSignal.filter({ trade_id: tradeId }, '-created_date', 50);
+        if (!recs?.length) return;
+        const ordered = recs.slice().reverse(); // oldest first
+        for (const sig of ordered) {
+          if (handleSignalRef.current) await handleSignalRef.current(sig);
+        }
+      } catch { /* polling best-effort */ }
+    };
+    const iv = setInterval(poll, 1500);
+    return () => clearInterval(iv);
   }, [tradeId]);
 
   // Tear down any live call when the chat unmounts.
