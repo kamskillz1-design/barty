@@ -28,6 +28,8 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
     want_exchange_type: '',
     want_category: '',
     want_subcategory: '',
+    want_title: '',
+    want_description: '',
     is_open_to_anything: false,
     exchange_location: 'local',
     tags: [],
@@ -87,7 +89,9 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
       // clear WANT side when open to anything
       want_exchange_type: form.is_open_to_anything ? '' : form.want_exchange_type,
       want_category: form.is_open_to_anything ? '' : form.want_category,
-      want_subcategory: form.is_open_to_anything ? '' : form.want_subcategory
+      want_subcategory: form.is_open_to_anything ? '' : form.want_subcategory,
+      want_title: form.is_open_to_anything ? '' : form.want_title,
+      want_description: form.is_open_to_anything ? '' : form.want_description
     };
     await onSubmit(data);
   };
@@ -195,7 +199,17 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
         {form.is_open_to_anything ? (
           <p className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{t.listing.openAnythingEditorHint}</p>
         ) : (
-          <div className="mt-4"><SideSelector prefix="want" tone="want" /></div>
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.title}</label>
+              <input value={form.want_title} onChange={(e) => set('want_title', e.target.value)} className={inputCls} placeholder={t.listing.lookingFor} />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.description}</label>
+              <textarea rows={3} value={form.want_description} onChange={(e) => set('want_description', e.target.value)} className={inputCls} />
+            </div>
+            <SideSelector prefix="want" tone="want" />
+          </div>
         )}
       </section>
 

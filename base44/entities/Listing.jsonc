@@ -44,6 +44,14 @@
       "type": "string",
       "description": "Free-form subcategory label on the WANT side. Empty when is_open_to_anything is true."
     },
+    "want_title": {
+      "type": "string",
+      "description": "Optional short label for the WANT side (what is wanted in return). Empty when is_open_to_anything is true."
+    },
+    "want_description": {
+      "type": "string",
+      "description": "Optional detailed description of what is wanted in return. Empty when is_open_to_anything is true."
+    },
     "is_open_to_anything": {
       "type": "boolean",
       "default": false,
