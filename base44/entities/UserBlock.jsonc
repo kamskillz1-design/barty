@@ -42,7 +42,7 @@
       ]
     },
     "create": {
-      "created_by_id": "{{user.id}}"
+      "data.blocker_id": "{{user.id}}"
     },
     "update": {
       "$or": [
