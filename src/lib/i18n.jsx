@@ -274,11 +274,17 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
       const en = JSON.stringify(translations.en);
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: `You are a professional UI localizer. Translate the user-facing strings in the JSON below into ${langName} (language code "${code}"). Return ONLY a raw JSON object (no markdown, no code fences, no commentary) with the EXACT same structure and the same keys, as the top-level object. Translate every human-readable value into ${langName}; keep object keys, enum-like codes, and English-in-code tokens verbatim. Set the "_dir" field to "rtl" if ${langName} is written right-to-left (e.g. Arabic, Hebrew, Persian/Farsi/Dari, Urdu, Pashto, Sindhi, Yiddish, Dhivehi, Uyghur, Kashmiri), otherwise "ltr". JSON:\n${en}`,
-        model: 'gpt_5_mini'
+        model: 'gpt_5_4'
       });
-      // InvokeLLM returns a string when no response_json_schema is supplied —
-      // strip any accidental code fences and parse the JSON object ourselves.
-      const raw = typeof res === 'string' ? res.trim().replace(/^```(?:json)?\s*|\s*```$/g, '').trim() : '';
+      // The model returns the translation as a JSON string. Strip any accidental
+      // code fence, then isolate the outermost JSON object so leading/trailing
+      // prose can't break parsing. (Large scripts like Bengali were getting
+      // truncated mid-output on the smaller model; a stronger model avoids that.)
+      let raw = typeof res === 'string' ? res.trim() : (res && typeof res === 'object' ? JSON.stringify(res) : '');
+      raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const start = raw.indexOf('{');
+      const end = raw.lastIndexOf('}');
+      if (start !== -1 && end > start) raw = raw.slice(start, end + 1);
       let dict = {};
       try { dict = raw ? JSON.parse(raw) : {}; } catch { dict = {}; }
       if (!dict || typeof dict !== 'object' || Array.isArray(dict)) dict = {};
