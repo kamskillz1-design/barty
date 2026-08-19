@@ -11,11 +11,15 @@ export default function Layout() {
   const { setLang, lang } = useI18n();
   const location = useLocation();
 
-  // Sync UI language to the user's saved preference
+  // Apply the user's saved profile language only once — when there is no
+  // explicit runtime choice in localStorage yet. This prevents the header
+  // language switcher's selection from being reset every time Layout (re)mounts
+  // as the user crosses between public and protected pages.
   useEffect(() => {
-    if (user?.preferred_language && user.preferred_language !== lang) {
-      setLang(user.preferred_language);
-    }
+    if (!user?.preferred_language || user.preferred_language === lang) return;
+    let stored = '';
+    try { stored = localStorage.getItem('ibarti_lang_pref') || ''; } catch { /* ignore */ }
+    if (!stored) setLang(user.preferred_language);
   }, [user]);
 
   const links = [

@@ -227,9 +227,19 @@ const deepMerge = (base, override) => {
 
 const I18nContext = createContext();
 
+// localStorage key that holds the user's explicitly-chosen UI language code.
+// Restored on every provider mount so the choice survives navigation and
+// reloads; only an explicit switcher selection (or a fresh profile preference
+// on first login) changes it afterwards.
+const LANG_PREF_KEY = 'ibarti_lang_pref';
+
+const readStoredLang = () => {
+  try { return localStorage.getItem(LANG_PREF_KEY) || ''; } catch { return ''; }
+};
+
 export const I18nProvider = ({ children, initialLang = 'en' }) => {
-  const [lang, setLangState] = useState(initialLang);
-  const [t, setT] = useState(() => translations[initialLang] || translations.en);
+  const [lang, setLangState] = useState(() => readStoredLang() || initialLang);
+  const [t, setT] = useState(() => translations[readStoredLang() || initialLang] || translations.en);
   const [translating, setTranslating] = useState(false);
 
   const dir = translations[lang]?._dir || detectDir(lang);
@@ -247,6 +257,7 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
 
   const setLang = async (code) => {
     setLangState(code);
+    try { localStorage.setItem(LANG_PREF_KEY, code); } catch { /* storage blocked */ }
     if (translations[code]) { applyLang(code, translations[code]); return; }
     const cacheKey = `barti_i18n_${code}`;
     try {
