@@ -156,9 +156,26 @@ export const categoriesForType = (typeId) =>
 // Full i18n key for a subcategory (stable, stored on the listing).
 export const subcatKey = (categoryId, subSlug) => `${categoryId}__${subSlug}`;
 
+// Sentinel stored on listings when the user picks the generic "Other"
+// fallback at either the category or the subcategory level.
+export const OTHER_KEY = '__other';
+
+// Resolve a stored category id into the current UI language's label,
+// including the "Other" sentinel and legacy free-form text.
+export const categoryLabel = (t, catId) => {
+  if (!catId) return '';
+  if (t.v1cat && t.v1cat[catId]) return t.v1cat[catId];
+  if (catId === OTHER_KEY) return (t.listing && t.listing.otherCategory) || 'Other';
+  return catId;
+};
+
 // Resolve a stored subcategory value into the current UI language's label.
-// Falls back to the raw stored value (so legacy free-form text still shows).
-export const subcatLabel = (t, stored) =>
-  (stored && t.v1sub && t.v1sub[stored]) ? t.v1sub[stored] : (stored || '');
+// Handles the "Other" sentinel, localizable keys, and legacy free-form text.
+export const subcatLabel = (t, stored) => {
+  if (!stored) return '';
+  if (stored === OTHER_KEY) return (t.listing && t.listing.otherSubcategory) || 'Other';
+  if (t.v1sub && t.v1sub[stored]) return t.v1sub[stored];
+  return stored;
+};
 
 export const EXCHANGE_LOCATIONS = ['local', 'national', 'international', 'online'];

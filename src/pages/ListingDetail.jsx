@@ -7,7 +7,7 @@ import SafetyBanner from '@/components/SafetyBanner';
 import ValueMatchIndicator from '@/components/ValueMatchIndicator';
 import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X, Pencil, Globe } from 'lucide-react';
 import { Image } from '@/components/ui/image';
-import { EXCHANGE_TYPES, getCategory, subcatLabel } from '@/lib/categories';
+import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -115,7 +115,7 @@ export default function ListingDetail() {
             </div>
             <h1 className="mt-3 text-2xl font-bold text-slate-900">{listing.title}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-              {listing.have_category && <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{t.v1cat[listing.have_category]}{listing.have_subcategory ? ` · ${subcatLabel(t, listing.have_subcategory)}` : ''}</span>}
+              {listing.have_category && <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{categoryLabel(t, listing.have_category)}{listing.have_subcategory ? ` · ${subcatLabel(t, listing.have_subcategory)}` : ''}</span>}
               {loc && <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{loc}</span>}
             </div>
           </div>
@@ -128,7 +128,7 @@ export default function ListingDetail() {
               <p className="mt-1 text-sm font-semibold text-emerald-700">✨ {t.listing.openToAnything}</p>
             ) : (
               <p className="mt-1 text-sm font-semibold text-slate-800">
-                {listing.want_category ? `${t.v1cat[listing.want_category]}${listing.want_subcategory ? ` · ${subcatLabel(t, listing.want_subcategory)}` : ''}` : <span className="italic text-slate-400">{t.listing.lookingFor}</span>}
+                {listing.want_category ? `${categoryLabel(t, listing.want_category)}${listing.want_subcategory ? ` · ${subcatLabel(t, listing.want_subcategory)}` : ''}` : <span className="italic text-slate-400">{t.listing.lookingFor}</span>}
               </p>
             )}
           </div>

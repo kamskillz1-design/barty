@@ -4,7 +4,7 @@ import { ArrowLeftRight, Package, MapPin, User, Globe } from 'lucide-react';
 import moment from 'moment';
 import { useI18n } from '@/lib/i18n';
 import { Image } from '@/components/ui/image';
-import { EXCHANGE_TYPES, getCategory, subcatLabel } from '@/lib/categories';
+import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
 
 /**
  * BarterCard — renders ONE listing as a single trade proposition: the HAVE
@@ -16,8 +16,8 @@ export default function BarterCard({ listing }) {
 
   const haveType = EXCHANGE_TYPES.find((x) => x.id === listing.have_exchange_type);
   const wantType = EXCHANGE_TYPES.find((x) => x.id === listing.want_exchange_type);
-  const haveCat = listing.have_category ? t.v1cat[listing.have_category] : '';
-  const wantCat = listing.want_category ? t.v1cat[listing.want_category] : '';
+  const haveCat = categoryLabel(t, listing.have_category);
+  const wantCat = categoryLabel(t, listing.want_category);
   const openToAnything = !!listing.is_open_to_anything;
 
   const haveLine = [haveCat, subcatLabel(t, listing.have_subcategory)].filter(Boolean).join(' · ');

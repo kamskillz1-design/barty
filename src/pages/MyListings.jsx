@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { categoryLabel } from '@/lib/categories';
 
 export default function MyListings() {
   const { t } = useI18n();
@@ -56,7 +57,7 @@ export default function MyListings() {
               </Link>
               <div className="p-4">
                 <Link to={`/listings/${l.id}`} className="font-semibold text-slate-900 line-clamp-1">{l.title}</Link>
-                <p className="mt-1 text-xs text-slate-400">{l.have_category ? (t.v1cat[l.have_category] || '') : ''}</p>
+                <p className="mt-1 text-xs text-slate-400">{categoryLabel(t, l.have_category)}</p>
                 <div className="mt-3 flex items-center justify-between">
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${l.status === 'available' ? 'bg-emerald-50 text-emerald-600' : l.status === 'reserved' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>
                     {l.status}

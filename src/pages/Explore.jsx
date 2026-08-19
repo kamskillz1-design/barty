@@ -10,7 +10,7 @@ import { COUNTRIES } from '@/lib/geoData';
 import { Search, Plus, Package, Scale, Globe2, Sparkles, SlidersHorizontal } from 'lucide-react';
 import GlobalImpactCounter from '@/components/GlobalImpactCounter';
 import LocalDiscovery from '@/components/LocalDiscovery';
-import { EXCHANGE_TYPES, categoriesForType, CATEGORY_TREE } from '@/lib/categories';
+import { EXCHANGE_TYPES, categoriesForType, CATEGORY_TREE, OTHER_KEY } from '@/lib/categories';
 
 export default function Explore() {
   const { t } = useI18n();
@@ -104,6 +104,7 @@ export default function Explore() {
           <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
             <option value="">{t.search.allCategories}</option>
             {(exchType ? categoriesForType(exchType) : CATEGORY_TREE).map((c) => <option key={c.id} value={c.id}>{t.v1cat[c.id]}</option>)}
+            <option value={OTHER_KEY}>{t.listing.otherCategory}</option>
           </select>
           <SearchableSelect options={COUNTRIES} value={countryFilter} onChange={setCountryFilter} allLabel={t.search.allLocations} placeholder={t.search.allLocations} />
           <input value={townFilter} onChange={(e) => setTownFilter(e.target.value)} placeholder={t.search.anyTown} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white" />
