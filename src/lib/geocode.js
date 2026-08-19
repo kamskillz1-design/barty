@@ -17,6 +17,23 @@ export async function geocode(query) {
   return null;
 }
 
+// Reverse-geocode [lat, lng] → { country, city } via Nominatim.
+export async function reverseGeocode(lat, lng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal });
+    clearTimeout(timer);
+    const data = await res.json();
+    const a = data?.address || {};
+    const country = a.country || '';
+    const city = a.city || a.town || a.village || a.municipality || a.county || a.state_district || '';
+    return { country, city };
+  } catch { /* network/CORS — ignore */ }
+  return null;
+}
+
 // Resolves to [lat, lng] or null if denied/unsupported.
 export function getUserLocation() {
   return new Promise((resolve) => {

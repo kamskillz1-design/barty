@@ -11,6 +11,9 @@ import { Search, Plus, Package, Scale, Globe2, Sparkles, SlidersHorizontal } fro
 import GlobalImpactCounter from '@/components/GlobalImpactCounter';
 import LocalDiscovery from '@/components/LocalDiscovery';
 import { EXCHANGE_TYPES, categoriesForType, CATEGORY_TREE, OTHER_KEY } from '@/lib/categories';
+import { getUserLocation, reverseGeocode } from '@/lib/geocode';
+
+const SESSION_KEY = 'ibarti_explore_loc';
 
 export default function Explore() {
   const { t } = useI18n();
@@ -34,20 +37,55 @@ export default function Explore() {
         setLoading(false);
       }
     })();
+
+    // Auto-detect location once per session and pre-fill filters.
+    (async () => {
+      let loc = null;
+      try { loc = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch { /* ignore */ }
+      if (!loc) {
+        const coords = await getUserLocation();
+        if (coords) {
+          const rev = await reverseGeocode(coords[0], coords[1]);
+          if (rev && (rev.country || rev.city)) {
+            loc = rev;
+            try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(loc)); } catch { /* ignore */ }
+          }
+        }
+      }
+      if (loc) {
+        if (loc.country) setCountryFilter(loc.country);
+        if (loc.city) setTownFilter(loc.city);
+      }
+    })();
   }, []);
 
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
     const tl = townFilter.trim().toLowerCase();
-    return listings.filter((l) => {
+    const base = listings.filter((l) => {
       if (l.status === 'traded') return false;
       if (ql && !(`${l.title || ''} ${l.description || ''} ${(l.tags || []).join(' ')}`.toLowerCase().includes(ql))) return false;
+      const isOnline = l.exchange_location === 'online';
       if (category && l.have_category !== category) return false;
       if (exchType && l.have_exchange_type !== exchType) return false;
-      if (countryFilter && (l.country || '').toLowerCase() !== countryFilter.toLowerCase()) return false;
-      if (tl && !(`${l.town || ''} ${l.city || ''}`.toLowerCase().includes(tl))) return false;
+      // Online listings bypass the local-area filters so they remain available as
+      // fallback even when a city/country has been auto-detected.
+      if (!isOnline) {
+        if (countryFilter && (l.country || '').toLowerCase() !== countryFilter.toLowerCase()) return false;
+        if (tl && !(`${l.town || ''} ${l.city || ''}`).toLowerCase().includes(tl)) return false;
+      }
       return true;
     });
+    // Order: city matches first, then same-country, then online listings, then the rest.
+    const cl = tl;
+    const cf = countryFilter.trim().toLowerCase();
+    const rank = (l) => {
+      if (cl && (`${l.town || ''} ${l.city || ''}`).toLowerCase().includes(cl)) return 0;
+      if (cf && (l.country || '').toLowerCase() === cf) return 1;
+      if (l.exchange_location === 'online') return 2;
+      return 3;
+    };
+    return [...base].sort((a, b) => rank(a) - rank(b));
   }, [listings, q, category, exchType, countryFilter, townFilter]);
 
   return (
