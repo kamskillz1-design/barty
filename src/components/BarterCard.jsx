@@ -59,7 +59,7 @@ export default function BarterCard({ listing }) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-sky-600">{t.listing.haveLabel}</p>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-sky-600">{t.listing.have}</p>
           <p className="line-clamp-2 text-sm font-semibold text-slate-900">{listing.title}</p>
           {haveLine && <p className="mt-0.5 line-clamp-1 text-xs text-slate-400">{haveLine}</p>}
         </div>
@@ -80,7 +80,7 @@ export default function BarterCard({ listing }) {
           </div>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-amber-600">{t.listing.wantLabel}</p>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-amber-600">{t.listing.want}</p>
           {openToAnything ? (
             <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
               ✨ {t.listing.openToAnything}
