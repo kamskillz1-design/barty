@@ -4,7 +4,7 @@ import { ArrowLeftRight, Package, MapPin, User, Globe } from 'lucide-react';
 import moment from 'moment';
 import { useI18n } from '@/lib/i18n';
 import { Image } from '@/components/ui/image';
-import { EXCHANGE_TYPES, getCategory } from '@/lib/categories';
+import { EXCHANGE_TYPES, getCategory, subcatLabel } from '@/lib/categories';
 
 /**
  * BarterCard — renders ONE listing as a single trade proposition: the HAVE
@@ -20,8 +20,8 @@ export default function BarterCard({ listing }) {
   const wantCat = listing.want_category ? t.v1cat[listing.want_category] : '';
   const openToAnything = !!listing.is_open_to_anything;
 
-  const haveLine = [haveCat, listing.have_subcategory].filter(Boolean).join(' · ');
-  const wantLine = [wantCat, listing.want_subcategory].filter(Boolean).join(' · ');
+  const haveLine = [haveCat, subcatLabel(t, listing.have_subcategory)].filter(Boolean).join(' · ');
+  const wantLine = [wantCat, subcatLabel(t, listing.want_subcategory)].filter(Boolean).join(' · ');
 
   const loc = [listing.city, listing.country].filter(Boolean).join(', ');
   const exchLoc = listing.exchange_location ? t.exchLoc[listing.exchange_location] : '';

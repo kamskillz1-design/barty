@@ -3,7 +3,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SearchableSelect from '@/components/SearchableSelect';
 import { COUNTRIES } from '@/lib/geoData';
-import { EXCHANGE_TYPES, categoriesForType, getCategory, EXCHANGE_LOCATIONS } from '@/lib/categories';
+import { EXCHANGE_TYPES, categoriesForType, getCategory, EXCHANGE_LOCATIONS, subcatKey } from '@/lib/categories';
 import { ImagePlus, X, Save, ArrowLeftRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
@@ -150,7 +150,10 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.subcategory}</label>
             <select value={subVal} onChange={(e) => set(`${prefix}_subcategory`, e.target.value)} className={inputCls}>
               <option value="">{t.listing.selectSubcategory}</option>
-              {subs.map((s) => <option key={s} value={s}>{s}</option>)}
+              {subs.map((s) => {
+                const key = subcatKey(catVal, s);
+                return <option key={s} value={key}>{t.v1sub?.[key] || s}</option>;
+              })}
             </select>
           </div>
         )}
