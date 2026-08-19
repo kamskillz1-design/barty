@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
@@ -8,19 +8,7 @@ import { Compass, Package, ArrowLeftRight, User, LogOut, LogIn, Sparkles } from 
 export default function Layout() {
   const { t } = useI18n();
   const { user, logout } = useAuth();
-  const { setLang, lang } = useI18n();
   const location = useLocation();
-
-  // Apply the user's saved profile language only once — when there is no
-  // explicit runtime choice in localStorage yet. This prevents the header
-  // language switcher's selection from being reset every time Layout (re)mounts
-  // as the user crosses between public and protected pages.
-  useEffect(() => {
-    if (!user?.preferred_language || user.preferred_language === lang) return;
-    let stored = '';
-    try { stored = localStorage.getItem('ibarti_lang_pref') || ''; } catch { /* ignore */ }
-    if (!stored) setLang(user.preferred_language);
-  }, [user]);
 
   const links = [
     { to: '/explore', label: t.nav.explore, icon: Compass },

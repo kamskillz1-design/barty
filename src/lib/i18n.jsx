@@ -246,8 +246,8 @@ const readStoredLang = () => {
 };
 
 export const I18nProvider = ({ children, initialLang = 'en' }) => {
-  const [lang, setLangState] = useState(() => readStoredLang() || initialLang);
-  const [t, setT] = useState(() => translations[readStoredLang() || initialLang] || translations.en);
+  const [lang, setLangState] = useState('en');
+  const [t, setT] = useState(() => translations.en);
   const [translating, setTranslating] = useState(false);
 
   const dir = translations[lang]?._dir || detectDir(lang);
@@ -264,6 +264,9 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
   };
 
   const setLang = async (code) => {
+    // App UI is pinned to English as the GTranslate source language; GTranslate
+    // owns all user-facing translation. Ignore non-English selections.
+    if (code !== 'en') return;
     setLangState(code);
     try { localStorage.setItem(LANG_PREF_KEY, code); } catch { /* storage blocked */ }
     if (translations[code]) { applyLang(code, translations[code]); return; }
@@ -323,17 +326,11 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
     }
   };
 
-  // On mount, hydrate a persisted non-static preference (generate if not cached)
+  // On mount, clear any stale non-English UI preference so the base UI always
+  // renders in English (the GTranslate source language). GTranslate owns all
+  // user-facing translation from there.
   useEffect(() => {
-    if (lang === 'en' || translations[lang]) return;
-    const cacheKey = `barti_i18n_${lang}`;
-    try {
-      const raw = localStorage.getItem(cacheKey);
-      const cached = raw ? JSON.parse(raw) : null;
-      // Ignore empty/broken caches so a failed translation self-heals next load.
-      if (cached && Object.keys(cached).length > 5 && typeof cached.appName === 'string') { applyLang(lang, cached); return; }
-    } catch { /* ignore */ }
-    setLang(lang);
+    try { localStorage.removeItem(LANG_PREF_KEY); } catch { /* ignore */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
