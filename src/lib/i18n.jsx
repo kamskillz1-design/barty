@@ -282,8 +282,12 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
       let dict = {};
       try { dict = raw ? JSON.parse(raw) : {}; } catch { dict = {}; }
       if (!dict || typeof dict !== 'object' || Array.isArray(dict)) dict = {};
-      try { localStorage.setItem(cacheKey, JSON.stringify(dict)); } catch { /* storage full */ }
-      applyLang(code, dict);
+      const isValid = dict && Object.keys(dict).length > 5 && typeof dict.appName === 'string';
+      // Only cache successful translations — caching an empty result would
+      // permanently freeze the language in English, since the mount hydrate
+      // reads the cache and never retries (the previous "language won't load").
+      if (isValid) { try { localStorage.setItem(cacheKey, JSON.stringify(dict)); } catch { /* storage full */ } }
+      applyLang(code, isValid ? dict : {});
     } catch {
       applyLang(code, translations.en);
     } finally {
@@ -296,8 +300,10 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
     if (lang === 'en' || translations[lang]) return;
     const cacheKey = `barti_i18n_${lang}`;
     try {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) { applyLang(lang, JSON.parse(cached)); return; }
+      const raw = localStorage.getItem(cacheKey);
+      const cached = raw ? JSON.parse(raw) : null;
+      // Ignore empty/broken caches so a failed translation self-heals next load.
+      if (cached && Object.keys(cached).length > 5 && typeof cached.appName === 'string') { applyLang(lang, cached); return; }
     } catch { /* ignore */ }
     setLang(lang);
     // eslint-disable-next-line react-hooks/exhaustive-deps
