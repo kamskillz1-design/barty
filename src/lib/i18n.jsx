@@ -265,37 +265,55 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
     if (translations[code]) { applyLang(code, translations[code]); return; }
     const cacheKey = `barti_i18n_${code}`;
     try {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) { applyLang(code, JSON.parse(cached)); return; }
+      const cachedRaw = localStorage.getItem(cacheKey);
+      const cached = cachedRaw ? JSON.parse(cachedRaw) : null;
+      if (cached && Object.keys(cached).length > 5 && typeof cached.appName === 'string') { applyLang(code, cached); return; }
     } catch { /* ignore malformed cache */ }
     setTranslating(true);
-    try {
-      const langName = LANGUAGES_BY_CODE[code]?.label || code;
-      const en = JSON.stringify(translations.en);
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are a professional UI localizer. Translate the user-facing strings in the JSON below into ${langName} (language code "${code}"). Return ONLY a raw JSON object (no markdown, no code fences, no commentary) with the EXACT same structure and the same keys, as the top-level object. Translate every human-readable value into ${langName}; keep object keys, enum-like codes, and English-in-code tokens verbatim. Set the "_dir" field to "rtl" if ${langName} is written right-to-left (e.g. Arabic, Hebrew, Persian/Farsi/Dari, Urdu, Pashto, Sindhi, Yiddish, Dhivehi, Uyghur, Kashmiri), otherwise "ltr". JSON:\n${en}`,
-        model: 'gpt_5_4'
-      });
-      // The model returns the translation as a JSON string. Strip any accidental
-      // code fence, then isolate the outermost JSON object so leading/trailing
-      // prose can't break parsing. (Large scripts like Bengali were getting
-      // truncated mid-output on the smaller model; a stronger model avoids that.)
+    const langName = LANGUAGES_BY_CODE[code]?.label || code;
+    // Split the dictionary into small chunks and translate them in parallel.
+    // Each call is tiny so a large script (e.g. Bengali) can't truncate, a single
+    // hanging call is capped by a timeout instead of freezing the whole switch,
+    // and the total wall-time is one round-trip, not five sequential ones.
+    const CHUNKS = [
+      ['appName', 'nav', 'local', 'impact'],
+      ['hubs', 'search', 'categories'],
+      ['listing', 'exchType', 'exchLoc', 'v1cat'],
+      ['v1sub'],
+      ['tags', 'trade', 'call', 'value', 'safety', 'profile', 'common', 'landing']
+    ];
+    const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+    const parsePart = (res) => {
       let raw = typeof res === 'string' ? res.trim() : (res && typeof res === 'object' ? JSON.stringify(res) : '');
       raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-      const start = raw.indexOf('{');
-      const end = raw.lastIndexOf('}');
-      if (start !== -1 && end > start) raw = raw.slice(start, end + 1);
-      let dict = {};
-      try { dict = raw ? JSON.parse(raw) : {}; } catch { dict = {}; }
-      if (!dict || typeof dict !== 'object' || Array.isArray(dict)) dict = {};
-      const isValid = dict && Object.keys(dict).length > 5 && typeof dict.appName === 'string';
-      // Only cache successful translations — caching an empty result would
-      // permanently freeze the language in English, since the mount hydrate
-      // reads the cache and never retries (the previous "language won't load").
-      if (isValid) { try { localStorage.setItem(cacheKey, JSON.stringify(dict)); } catch { /* storage full */ } }
-      applyLang(code, isValid ? dict : {});
-    } catch {
-      applyLang(code, translations.en);
+      const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+      if (s !== -1 && e > s) raw = raw.slice(s, e + 1);
+      let part = {};
+      try { part = raw ? JSON.parse(raw) : {}; } catch { part = {}; }
+      return (part && typeof part === 'object' && !Array.isArray(part)) ? part : {};
+    };
+    try {
+      const results = await Promise.allSettled(CHUNKS.map(async (keys) => {
+        const sub = {};
+        for (const k of keys) sub[k] = translations.en[k];
+        const res = await withTimeout(base44.integrations.Core.InvokeLLM({
+          prompt: `You are a professional UI localizer. Translate the user-facing strings in the JSON below into ${langName} (language code "${code}"). Return ONLY a raw JSON object (no markdown, no code fences, no commentary) with the EXACT same structure and the same keys. Translate every human-readable value; keep object keys and enum-like codes verbatim. JSON:\n${JSON.stringify(sub)}`,
+          model: 'gpt_5_mini'
+        }), 20000);
+        return { keys, part: parsePart(res) };
+      }));
+      const merged = {};
+      let okCount = 0;
+      for (const r of results) {
+        if (r.status !== 'fulfilled' || !r.value) continue;
+        const { keys, part } = r.value;
+        for (const k of keys) if (part[k] !== undefined) merged[k] = part[k];
+        okCount++;
+      }
+      const isValid = okCount > 0 && typeof merged.appName === 'string';
+      // Only cache a full-ish translation so a failed attempt retries next load.
+      if (isValid) { try { localStorage.setItem(cacheKey, JSON.stringify(merged)); } catch { /* storage full */ } }
+      applyLang(code, isValid ? merged : {});
     } finally {
       setTranslating(false);
     }
