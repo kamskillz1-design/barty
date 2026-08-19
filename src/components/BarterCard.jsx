@@ -1,40 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeftRight, Package, MapPin, User, Globe } from 'lucide-react';
 import moment from 'moment';
 import { useI18n } from '@/lib/i18n';
-import { base44 } from '@/api/base44Client';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
-
-// In-memory cache of owner user id → display name shared across all cards.
-const ownerNameCache = {};
 
 /**
  * BarterCard — renders ONE listing as a single trade proposition: the HAVE
  * half (what the owner offers) on top and the WANT half (what they want in
  * return) below, with clear HAVING / WANTING badges.
  */
-export default function BarterCard({ listing }) {
+export default function BarterCard({ listing, ownerName }) {
   const { t } = useI18n();
-  const [ownerName, setOwnerName] = useState(
-    (listing.offering_user_id && ownerNameCache[listing.offering_user_id]) || ''
-  );
-
-  useEffect(() => {
-    const id = listing.offering_user_id;
-    if (!id) return;
-    if (ownerNameCache[id]) { setOwnerName(ownerNameCache[id]); return; }
-    let alive = true;
-    base44.asServiceRole.entities.User.get(id)
-      .then((u) => {
-        const name = u?.full_name || '';
-        ownerNameCache[id] = name;
-        if (alive) setOwnerName(name);
-      })
-      .catch(() => { /* restricted — fall back to generic label */ });
-    return () => { alive = false; };
-  }, [listing.offering_user_id]);
 
   const haveType = EXCHANGE_TYPES.find((x) => x.id === listing.have_exchange_type);
   const wantType = EXCHANGE_TYPES.find((x) => x.id === listing.want_exchange_type);

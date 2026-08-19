@@ -26,13 +26,23 @@ export default function Explore() {
   const [category, setCategory] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [townFilter, setTownFilter] = useState('');
+  const [ownerNames, setOwnerNames] = useState({});
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       try {
         const data = await base44.entities.Listing.list('-created_date', 200);
-        setListings((data || []).filter((l) => l.status !== 'hidden'));
+        const visible = (data || []).filter((l) => l.status !== 'hidden');
+        setListings(visible);
+        const ids = [...new Set(visible.map((l) => l.offering_user_id).filter(Boolean))];
+        if (ids.length) {
+          try {
+            const res = await base44.functions.invoke('resolveUserNames', { ids });
+            const names = res?.data?.names || res?.names || {};
+            setOwnerNames(names);
+          } catch { /* keep generic fallback labels */ }
+        }
       } finally {
         setLoading(false);
       }
@@ -161,7 +171,7 @@ export default function Explore() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((l) => <BarterCard key={l.id} listing={l} />)}
+          {filtered.map((l) => <BarterCard key={l.id} listing={l} ownerName={ownerNames[l.offering_user_id]} />)}
         </div>
       )}
     </div>
