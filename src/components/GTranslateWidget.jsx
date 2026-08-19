@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 
-// Injected once app-wide. The GTranslate float.js engine still runs so it can
-// translate the freshly-rendered English base DOM on each load, but its own
-// visible flag switcher is hidden — our GTranslateSwitcher drives language
-// selection via the googtrans cookie + page reload (no stale-DOM restore issue).
+// Injected once app-wide. The GTranslate float.js engine renders its native flag
+// switcher here so the engine initializes and exposes window.doGTranslate, and the
+// user can pick a language directly. Our searchable dropdown (GTranslateSwitcher)
+// drives the same engine programmatically for non-English picks; English reloads.
 let injected = false;
 
 export default function GTranslateWidget() {
@@ -22,6 +22,5 @@ export default function GTranslateWidget() {
     document.body.appendChild(s);
   }, []);
 
-  // Hidden container so the engine's own switcher never renders visibly.
-  return <div className="gtranslate_engine hidden" aria-hidden="true" />;
+  return <div className="gtranslate_engine" />;
 }
