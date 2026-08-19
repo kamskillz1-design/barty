@@ -5,8 +5,9 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SafetyBanner from '@/components/SafetyBanner';
 import ValueMatchIndicator from '@/components/ValueMatchIndicator';
-import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X, Pencil } from 'lucide-react';
+import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X, Pencil, Globe } from 'lucide-react';
 import { Image } from '@/components/ui/image';
+import { EXCHANGE_TYPES, getCategory } from '@/lib/categories';
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -94,7 +95,7 @@ export default function ListingDetail() {
               <Image src={listing.image_urls[0]} alt={listing.title} className="h-full w-full object-cover" fittingType="fill" />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-slate-300">
-                {listing.type === 'service' ? <Wrench className="h-16 w-16" /> : <Package className="h-16 w-16" />}
+                {listing.have_exchange_type === 'services' ? <Wrench className="h-16 w-16" /> : <Package className="h-16 w-16" />}
               </div>
             )}
           </div>
@@ -103,36 +104,42 @@ export default function ListingDetail() {
         <div className="space-y-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${(listing.intent || 'offering') === 'seeking' ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-700'}`}>
-                {(listing.intent || 'offering') === 'seeking' ? t.listing.seeking : t.listing.offering}
+              <span className="inline-block rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
+                {(EXCHANGE_TYPES.find((x) => x.id === listing.have_exchange_type)?.icon || '📦')} {t.listing.haveLabel}
               </span>
-              <span className={`inline-block rounded-full px-3 py-1 text-xs font-semibold ${listing.type === 'service' ? 'bg-slate-100 text-slate-600' : 'bg-slate-100 text-slate-600'}`}>
-                {listing.type === 'service' ? t.listing.service : t.listing.good}
-              </span>
+              {listing.exchange_location && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                  <Globe className="h-3.5 w-3.5" /> {t.exchLoc[listing.exchange_location]}
+                </span>
+              )}
             </div>
             <h1 className="mt-3 text-2xl font-bold text-slate-900">{listing.title}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
-              <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{t.categories[listing.category] || listing.category}</span>
+              {listing.have_category && <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{t.v1cat[listing.have_category]}{listing.have_subcategory ? ` · ${listing.have_subcategory}` : ''}</span>}
               {loc && <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{loc}</span>}
             </div>
           </div>
           <p className="text-slate-600 leading-relaxed whitespace-pre-line">{listing.description}</p>
 
-          {listing.is_seeking_anything ? (
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <p className="text-sm font-semibold text-emerald-700">✨ {t.listing.openToAnything}</p>
-              <p className="mt-1 text-sm text-emerald-700/80">{t.listing.openToAnythingDesc}</p>
+          {/* WANT side */}
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/50 px-4 py-3">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-amber-600">{t.listing.wantLabel}</p>
+            {listing.is_open_to_anything ? (
+              <p className="mt-1 text-sm font-semibold text-emerald-700">✨ {t.listing.openToAnything}</p>
+            ) : (
+              <p className="mt-1 text-sm font-semibold text-slate-800">
+                {listing.want_category ? `${t.v1cat[listing.want_category]}${listing.want_subcategory ? ` · ${listing.want_subcategory}` : ''}` : <span className="italic text-slate-400">{t.listing.lookingFor}</span>}
+              </p>
+            )}
+          </div>
+
+          {listing.tags && listing.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {listing.tags.map((tg) => (
+                <span key={tg} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">#{tg}</span>
+              ))}
             </div>
-          ) : listing.seeking_interests && listing.seeking_interests.length > 0 ? (
-            <div>
-              <p className="mb-1.5 text-sm font-semibold text-slate-700">{t.listing.lookingFor}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {listing.seeking_interests.map((s) => (
-                  <span key={s} className="rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-700">{s}</span>
-                ))}
-              </div>
-            </div>
-          ) : null}
+          )}
 
           {owner && (
             <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3">
@@ -157,7 +164,7 @@ export default function ListingDetail() {
               onClick={() => (user ? setProposing(true) : navigate('/login'))}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-600 transition"
             >
-              <ArrowRight className="h-4 w-4" /> {listing.is_seeking_anything ? t.listing.counterOffer : (listing.intent || 'offering') === 'seeking' ? t.listing.fulfillRequest : t.listing.proposeTrade}
+              <ArrowRight className="h-4 w-4" /> {listing.is_open_to_anything ? t.listing.counterOffer : t.listing.proposeTrade}
             </button>
           )}
         </div>
@@ -169,7 +176,7 @@ export default function ListingDetail() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-4" onClick={() => setProposing(false)}>
           <div className="w-full max-w-lg rounded-2xl bg-white p-5 max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900">{listing.is_seeking_anything ? t.listing.counterOffer : t.listing.proposeTrade}</h3>
+              <h3 className="text-lg font-bold text-slate-900">{listing.is_open_to_anything ? t.listing.counterOffer : t.listing.proposeTrade}</h3>
               <button onClick={() => setProposing(false)}><X className="h-5 w-5 text-slate-400" /></button>
             </div>
             <p className="mt-1 text-sm text-slate-500">{t.listing.valueHint}</p>
@@ -191,12 +198,12 @@ export default function ListingDetail() {
                       {m.image_urls && m.image_urls[0] ? (
                         <Image src={m.image_urls[0]} alt={m.title} className="h-full w-full object-cover" fittingType="fill" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-slate-300">{m.type === 'service' ? <Wrench className="h-5 w-5" /> : <Package className="h-5 w-5" />}</div>
+                        <div className="flex h-full w-full items-center justify-center text-slate-300">{m.have_exchange_type === 'services' ? <Wrench className="h-5 w-5" /> : <Package className="h-5 w-5" />}</div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="truncate font-medium text-slate-900 text-sm">{m.title}</p>
-                      <p className="text-xs text-slate-400">{m.type === 'service' ? t.listing.service : t.listing.good}</p>
+                      <p className="text-xs text-slate-400">{EXCHANGE_TYPES.find((x) => x.id === m.have_exchange_type)?.icon} {m.have_exchange_type ? t.exchType[m.have_exchange_type] : ''}</p>
                     </div>
                     {selected === m.id && <Check className="h-5 w-5 text-sky-600" />}
                   </button>

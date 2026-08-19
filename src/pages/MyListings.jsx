@@ -51,12 +51,12 @@ export default function MyListings() {
             <div key={l.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
               <Link to={`/listings/${l.id}`} className="block">
                 <div className="flex aspect-[4/3] items-center justify-center bg-slate-100 text-slate-300 text-3xl">
-                  {l.type === 'service' ? '🛠️' : '📦'}
+                  {l.have_exchange_type === 'services' ? '🛠️' : l.have_exchange_type === 'digital' ? '💻' : '📦'}
                 </div>
               </Link>
               <div className="p-4">
                 <Link to={`/listings/${l.id}`} className="font-semibold text-slate-900 line-clamp-1">{l.title}</Link>
-                <p className="mt-1 text-xs text-slate-400">{t.categories[l.category] || l.category}</p>
+                <p className="mt-1 text-xs text-slate-400">{l.have_category ? (t.v1cat[l.have_category] || '') : ''}</p>
                 <div className="mt-3 flex items-center justify-between">
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${l.status === 'available' ? 'bg-emerald-50 text-emerald-600' : l.status === 'reserved' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>
                     {l.status}

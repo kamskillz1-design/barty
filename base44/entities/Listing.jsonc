@@ -4,56 +4,71 @@
   "properties": {
     "title": {
       "type": "string",
-      "description": "Title of the listing \u2014 what is being offered"
+      "description": "Title of the listing \u2014 short label for the HAVING item"
     },
     "description": {
       "type": "string",
-      "description": "Detailed description"
+      "description": "Detailed description of what is offered"
     },
-    "intent": {
+    "have_exchange_type": {
       "type": "string",
       "enum": [
-        "offering",
-        "seeking"
+        "goods",
+        "services",
+        "digital"
       ],
-      "default": "offering",
-      "description": "Whether the user is offering this item/service or seeking it"
+      "description": "Top-level exchange type of the HAVE side (what is offered)"
     },
-    "seeking_interests": {
+    "have_category": {
+      "type": "string",
+      "description": "V1 category id on the HAVE side"
+    },
+    "have_subcategory": {
+      "type": "string",
+      "description": "Free-form subcategory label on the HAVE side"
+    },
+    "want_exchange_type": {
+      "type": "string",
+      "enum": [
+        "goods",
+        "services",
+        "digital"
+      ],
+      "description": "Top-level exchange type of the WANT side (what is wanted in return). Empty when is_open_to_anything is true."
+    },
+    "want_category": {
+      "type": "string",
+      "description": "V1 category id on the WANT side. Empty when is_open_to_anything is true."
+    },
+    "want_subcategory": {
+      "type": "string",
+      "description": "Free-form subcategory label on the WANT side. Empty when is_open_to_anything is true."
+    },
+    "is_open_to_anything": {
+      "type": "boolean",
+      "default": false,
+      "description": "When true, the owner accepts any fair exchange and the WANT fields are ignored."
+    },
+    "exchange_location": {
+      "type": "string",
+      "enum": [
+        "local",
+        "national",
+        "international",
+        "online"
+      ],
+      "description": "Where the exchange can take place"
+    },
+    "tags": {
       "type": "array",
       "items": {
         "type": "string"
       },
-      "description": "For offering listings: specific items/services the user wants in return. Empty when is_seeking_anything is true."
-    },
-    "is_seeking_anything": {
-      "type": "boolean",
-      "default": false,
-      "description": "When true, the owner is open to any offer in return (Mode B / Open Exchange). seeking_interests is ignored."
-    },
-    "item_seeking_title": {
-      "type": "string",
-      "description": "Optional short title describing what is sought (when specific). Nullable when is_seeking_anything is true."
-    },
-    "item_seeking_description": {
-      "type": "string",
-      "description": "Optional detailed description of what is sought (when specific). Nullable when is_seeking_anything is true."
-    },
-    "type": {
-      "type": "string",
-      "enum": [
-        "good",
-        "service"
-      ],
-      "description": "Whether this is a physical good or a service"
-    },
-    "category": {
-      "type": "string",
-      "description": "Listing category (e.g. electronics, clothing, tutoring)"
+      "description": "Free-form tags to power search and matching"
     },
     "country": {
       "type": "string",
-      "description": "Country where the listing is located"
+      "description": "Country where the listing owner is based"
     },
     "city": {
       "type": "string",
@@ -96,8 +111,9 @@
   },
   "required": [
     "title",
-    "type",
-    "category",
+    "have_exchange_type",
+    "have_category",
+    "exchange_location",
     "baseline_value"
   ]
 }

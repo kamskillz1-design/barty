@@ -118,7 +118,7 @@ export default function Profile() {
           <div className="mt-3 space-y-2">
             {listings.map((l) => (
               <Link key={l.id} to={`/listings/${l.id}`} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50">
-                <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-slate-100 text-lg">{l.type === 'service' ? '🛠️' : '📦'}</div>
+                <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-slate-100 text-lg">{l.have_exchange_type === 'services' ? '🛠️' : l.have_exchange_type === 'digital' ? '💻' : '📦'}</div>
                 <div className="flex-1 min-w-0">
                   <p className="truncate text-sm font-semibold text-slate-900">{l.title}</p>
                   <p className="text-xs text-slate-400 flex items-center gap-1"><MapPin className="h-3 w-3" />{l.city || l.country || '—'}</p>

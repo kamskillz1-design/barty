@@ -13,10 +13,12 @@ export default function CreateListing() {
   const [saving, setSaving] = useState(false);
 
   const initialValues = {
-    title: '', description: '', intent: 'offering', type: 'good', category: 'electronics',
+    title: '', description: '',
+    have_exchange_type: '', have_category: '', have_subcategory: '',
+    want_exchange_type: '', want_category: '', want_subcategory: '',
+    is_open_to_anything: false, exchange_location: 'local', tags: [],
     country: user?.country || '', city: user?.city || '', town: '',
-    baseline_value: 50, seeking_interests: [], is_seeking_anything: false,
-    item_seeking_title: '', item_seeking_description: ''
+    baseline_value: 50
   };
 
   const handleCreate = async (data) => {

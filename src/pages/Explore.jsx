@@ -10,7 +10,7 @@ import { COUNTRIES } from '@/lib/geoData';
 import { Search, Plus, Package, Scale, Globe2, Sparkles, SlidersHorizontal } from 'lucide-react';
 import GlobalImpactCounter from '@/components/GlobalImpactCounter';
 import LocalDiscovery from '@/components/LocalDiscovery';
-import { CATEGORY_KEYS } from '@/lib/categories';
+import { EXCHANGE_TYPES, categoriesForType, CATEGORY_TREE } from '@/lib/categories';
 
 export default function Explore() {
   const { t } = useI18n();
@@ -19,11 +19,10 @@ export default function Explore() {
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
+  const [exchType, setExchType] = useState('');
   const [category, setCategory] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [townFilter, setTownFilter] = useState('');
-  const [intentFilter, setIntentFilter] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -42,15 +41,14 @@ export default function Explore() {
     const tl = townFilter.trim().toLowerCase();
     return listings.filter((l) => {
       if (l.status === 'traded') return false;
-      if (ql && !(`${l.title || ''} ${l.description || ''}`.toLowerCase().includes(ql))) return false;
-      if (category && l.category !== category) return false;
-      if (typeFilter && l.type !== typeFilter) return false;
-      if (intentFilter && (l.intent || 'offering') !== intentFilter) return false;
+      if (ql && !(`${l.title || ''} ${l.description || ''} ${(l.tags || []).join(' ')}`.toLowerCase().includes(ql))) return false;
+      if (category && l.have_category !== category) return false;
+      if (exchType && l.have_exchange_type !== exchType) return false;
       if (countryFilter && (l.country || '').toLowerCase() !== countryFilter.toLowerCase()) return false;
       if (tl && !(`${l.town || ''} ${l.city || ''}`.toLowerCase().includes(tl))) return false;
       return true;
     });
-  }, [listings, q, category, typeFilter, intentFilter, countryFilter, townFilter]);
+  }, [listings, q, category, exchType, countryFilter, townFilter]);
 
   return (
     <div className="space-y-7">
@@ -99,19 +97,13 @@ export default function Explore() {
           />
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          <select value={intentFilter} onChange={(e) => setIntentFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
-            <option value="">{t.search.allIntents}</option>
-            <option value="offering">{t.search.offerings}</option>
-            <option value="seeking">{t.search.seekings}</option>
-          </select>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
-            <option value="">{t.search.allTypes}</option>
-            <option value="good">{t.search.goods}</option>
-            <option value="service">{t.search.services}</option>
+          <select value={exchType} onChange={(e) => { setExchType(e.target.value); setCategory(''); }} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
+            <option value="">{t.listing.exchangeType}: {t.search.allTypes}</option>
+            {EXCHANGE_TYPES.map((x) => <option key={x.id} value={x.id}>{x.icon} {t.exchType[x.id]}</option>)}
           </select>
           <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
             <option value="">{t.search.allCategories}</option>
-            {CATEGORY_KEYS.map((k) => <option key={k} value={k}>{t.categories[k]}</option>)}
+            {(exchType ? categoriesForType(exchType) : CATEGORY_TREE).map((c) => <option key={c.id} value={c.id}>{t.v1cat[c.id]}</option>)}
           </select>
           <SearchableSelect options={COUNTRIES} value={countryFilter} onChange={setCountryFilter} allLabel={t.search.allLocations} placeholder={t.search.allLocations} />
           <input value={townFilter} onChange={(e) => setTownFilter(e.target.value)} placeholder={t.search.anyTown} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white" />
