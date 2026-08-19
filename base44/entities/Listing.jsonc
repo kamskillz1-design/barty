@@ -107,10 +107,11 @@
       "enum": [
         "available",
         "reserved",
-        "traded"
+        "traded",
+        "hidden"
       ],
       "default": "available",
-      "description": "Availability status"
+      "description": "Availability status. 'hidden' is set automatically once a listing reaches the flag threshold, pending admin review."
     },
     "offering_user_id": {
       "type": "string",

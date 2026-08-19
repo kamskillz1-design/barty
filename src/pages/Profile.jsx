@@ -5,6 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SearchableSelect from '@/components/SearchableSelect';
 import ImpactStats from '@/components/ImpactStats';
+import ReviewsList from '@/components/reviews/ReviewsList';
 import { COUNTRIES } from '@/lib/geoData';
 import { Star, Plus, MapPin } from 'lucide-react';
 
@@ -14,7 +15,6 @@ export default function Profile() {
   const [form, setForm] = useState({ preferred_language: lang, country: '', city: '', town: '', bio: '', avatar_url: '' });
   const [listings, setListings] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [reviewers, setReviewers] = useState({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -33,13 +33,6 @@ export default function Profile() {
       setListings(mine || []);
       const revs = await base44.entities.Review.filter({ reviewee_id: user.id }, '-created_date', 50);
       setReviews(revs || []);
-      const map = {};
-      for (const r of (revs || [])) {
-        if (r.reviewer_id && !map[r.reviewer_id]) {
-          try { map[r.reviewer_id] = await base44.asServiceRole.entities.User.get(r.reviewer_id); } catch { map[r.reviewer_id] = { full_name: 'User' }; }
-        }
-      }
-      setReviewers(map);
     })();
   }, [user]);
 
@@ -131,24 +124,10 @@ export default function Profile() {
       </div>
 
       <div>
-        <h2 className="text-lg font-bold text-slate-900">{t.profile.reviews}</h2>
-        {reviews.length === 0 ? (
-          <p className="mt-3 rounded-2xl border border-dashed border-slate-300 bg-white py-10 text-center text-sm text-slate-400">{t.profile.noReviews}</p>
-        ) : (
-          <div className="mt-3 space-y-2">
-            {reviews.map((r) => (
-              <div key={r.id} className="rounded-xl border border-slate-200 bg-white p-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-slate-900">{reviewers[r.reviewer_id]?.full_name || 'User'}</span>
-                  <span className="flex items-center gap-0.5">
-                    {[1, 2, 3, 4, 5].map((n) => <Star key={n} className={`h-3.5 w-3.5 ${n <= r.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200'}`} />)}
-                  </span>
-                </div>
-                {r.comment && <p className="mt-1.5 text-sm text-slate-600">{r.comment}</p>}
-              </div>
-            ))}
-          </div>
-        )}
+        <h2 className="text-lg font-bold text-slate-900">{t.community?.reviews?.title || t.profile.reviews}</h2>
+        <div className="mt-3">
+          <ReviewsList userId={user.id} />
+        </div>
       </div>
 
     </div>

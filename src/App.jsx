@@ -21,6 +21,7 @@ import MyListings from '@/pages/MyListings';
 import Trades from '@/pages/Trades';
 import TradeDetail from '@/pages/TradeDetail';
 import Profile from '@/pages/Profile';
+import PublicProfile from '@/pages/PublicProfile';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -58,6 +59,7 @@ const AuthenticatedApp = () => {
           <Route path="/" element={<Explore />} />
           <Route path="/explore" element={<Explore />} />
           <Route path="/listings/:id" element={<ListingDetail />} />
+          <Route path="/users/:id" element={<PublicProfile />} />
         </Route>
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route element={<Layout />}>

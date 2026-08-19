@@ -5,7 +5,9 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SafetyBanner from '@/components/SafetyBanner';
 import ValueMatchIndicator from '@/components/ValueMatchIndicator';
-import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X, Pencil, Globe } from 'lucide-react';
+import FlagButton from '@/components/flags/FlagButton';
+import CommentsSection from '@/components/comments/CommentsSection';
+import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X, Pencil, Globe, ShieldAlert } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
 
@@ -88,6 +90,12 @@ export default function ListingDetail() {
         </div>
       )}
 
+      {listing.status === 'hidden' && (
+        <div className="flex items-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+          <ShieldAlert className="h-4 w-4" /> {t.community?.flag?.hiddenNotice || 'This listing has been hidden pending moderator review.'}
+        </div>
+      )}
+
       <div className="grid md:grid-cols-2 gap-6">
         <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
           <div className="aspect-square bg-slate-100">
@@ -113,7 +121,10 @@ export default function ListingDetail() {
                 </span>
               )}
             </div>
-            <h1 className="mt-3 text-2xl font-bold text-slate-900">{listing.title}</h1>
+            <div className="mt-3 flex items-start justify-between gap-2">
+              <h1 className="text-2xl font-bold text-slate-900">{listing.title}</h1>
+              {!isOwner && <FlagButton listingId={listing.id} />}
+            </div>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
               {listing.have_category && <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{categoryLabel(t, listing.have_category)}{listing.have_subcategory ? ` · ${subcatLabel(t, listing.have_subcategory)}` : ''}</span>}
               {loc && <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{loc}</span>}
@@ -142,14 +153,14 @@ export default function ListingDetail() {
           )}
 
           {owner && (
-            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3">
+            <Link to={`/users/${listing.offering_user_id}`} className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 hover:bg-slate-50 transition">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-sky-700 font-semibold">
                 {(owner.full_name || '?').charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-slate-900">{owner.full_name || '—'}</p>
               </div>
-            </div>
+            </Link>
           )}
 
           {isOwner ? (
@@ -171,6 +182,8 @@ export default function ListingDetail() {
       </div>
 
       <SafetyBanner />
+
+      <CommentsSection listingId={listing.id} listingOwnerId={listing.offering_user_id} />
 
       {proposing && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/50 p-4" onClick={() => setProposing(false)}>

@@ -1,0 +1,63 @@
+{
+  "name": "Comment",
+  "type": "object",
+  "properties": {
+    "listing_id": {
+      "type": "string",
+      "description": "Listing this comment belongs to"
+    },
+    "author_id": {
+      "type": "string",
+      "description": "User id of the comment author (snapshot for display/perf)"
+    },
+    "author_name": {
+      "type": "string",
+      "description": "Snapshot of the author's display name shown in the thread"
+    },
+    "body": {
+      "type": "string",
+      "description": "Comment text"
+    },
+    "edited": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when the author has edited the comment"
+    }
+  },
+  "required": [
+    "listing_id",
+    "author_id",
+    "author_name",
+    "body"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

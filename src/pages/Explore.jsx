@@ -29,7 +29,7 @@ export default function Explore() {
       setLoading(true);
       try {
         const data = await base44.entities.Listing.list('-created_date', 200);
-        setListings(data || []);
+        setListings((data || []).filter((l) => l.status !== 'hidden'));
       } finally {
         setLoading(false);
       }
