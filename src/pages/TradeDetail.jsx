@@ -10,7 +10,7 @@ import useCall from '@/hooks/useCall';
 import CallOverlay from '@/components/trade/CallOverlay';
 import IncomingCallOverlay from '@/components/trade/IncomingCallOverlay';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Send, Check, X, Star, ShieldCheck, Video, Mic } from 'lucide-react';
+import { ArrowLeft, Send, Check, X, Star, ShieldCheck } from 'lucide-react';
 import moment from 'moment';
 
 const STATUS_STYLE = {
@@ -254,18 +254,7 @@ export default function TradeDetail() {
       <div className="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col h-[420px]">
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="font-bold text-slate-900">{t.trade.chat}</h3>
-          {trade.status !== 'cancelled' && (
-            <div className="flex items-center gap-1.5">
-              <button type="button" onClick={() => call.startCall('voice')} disabled={call.status !== 'idle' || !!call.incoming} title={t.call?.voice}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 hover:bg-sky-50 hover:text-sky-600 disabled:opacity-50">
-                <Mic className="h-4 w-4" />
-              </button>
-              <button type="button" onClick={() => call.startCall('video')} disabled={call.status !== 'idle' || !!call.incoming} title={t.call?.video}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-500 text-white hover:bg-sky-600 disabled:opacity-50">
-                <Video className="h-4 w-4" />
-              </button>
-            </div>
-          )}
+
         </div>
         <div className="flex-1 overflow-y-auto space-y-2 pe-1">
           {timeline.length === 0 && <p className="text-center text-sm text-slate-400 mt-8">{t.trade.empty}</p>}
@@ -273,11 +262,7 @@ export default function TradeDetail() {
             <div key={item.id} className="flex justify-center py-1">
               <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] text-slate-500">
                 <span>{callRowText(item)} · {moment(item.created_date).format('LT')}</span>
-                {item.event === 'missed' && item.user_id !== user.id && (
-                  <button type="button" onClick={() => call.startCall(item.mode)} className="rounded-full bg-sky-500 px-2 py-0.5 text-[11px] font-semibold text-white hover:bg-sky-600">
-                    {t.call?.callBack}
-                  </button>
-                )}
+
               </div>
             </div>
           ) : (
