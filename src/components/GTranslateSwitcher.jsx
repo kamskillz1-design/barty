@@ -21,21 +21,40 @@ const SOURCE = 'en';
 export default function GTranslateSwitcher() {
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
-  const current = readGoogTrans() || SOURCE;
+  const [current, setCurrent] = useState(() => readGoogTrans() || SOURCE);
   const currentLabel = LANGUAGES.find((l) => l.code === current)?.label || 'English';
 
   const select = (code) => {
     if (switching) return;
-    setSwitching(true);
     setOpen(false);
+    if (code === current) return;
     if (code === SOURCE) {
-      // Clear the cookie (expire in the past on every path variant GTranslate may use).
+      setSwitching(true);
+      // Clear the cookie (expire in the past on every path variant GTranslate may use), then reload.
       document.cookie = 'googtrans=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
       document.cookie = 'googtrans=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=' + window.location.hostname;
-    } else {
-      document.cookie = `googtrans=/en/${code};path=/`;
+      window.location.reload();
+      return;
     }
-    window.location.reload();
+    // Non-English: persist the choice and translate the current DOM in place via
+    // GTranslate's engine (no reload → fast, no stale-restore issue).
+    document.cookie = `googtrans=/en/${code};path=/`;
+    setSwitching(true);
+    let tries = 0;
+    const go = () => {
+      if (typeof window.doGTranslate === 'function') {
+        try { window.doGTranslate('en|' + code); } catch { /* ignore */ }
+        setCurrent(code);
+        setSwitching(false);
+      } else if (tries++ < 40) {
+        setTimeout(go, 100);
+      } else {
+        // Engine never exposed it — fall back to a reload so the cookie-driven
+        // translation applies on the fresh English base DOM.
+        window.location.reload();
+      }
+    };
+    go();
   };
 
   return (
