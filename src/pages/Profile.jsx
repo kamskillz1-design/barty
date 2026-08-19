@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import SearchableSelect from '@/components/SearchableSelect';
 import ImpactStats from '@/components/ImpactStats';
 import ReviewsList from '@/components/reviews/ReviewsList';
+import BlockedUsersList from '@/components/BlockedUsersList';
 import { COUNTRIES } from '@/lib/geoData';
 import { Star, Plus, MapPin } from 'lucide-react';
 
@@ -137,6 +138,8 @@ export default function Profile() {
           <ReviewsList userId={user.id} />
         </div>
       </div>
+
+      <BlockedUsersList />
 
     </div>
   );

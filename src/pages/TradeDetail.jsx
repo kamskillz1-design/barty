@@ -6,11 +6,10 @@ import { useAuth } from '@/lib/AuthContext';
 import SafetyBanner from '@/components/SafetyBanner';
 import ValueMatchIndicator from '@/components/ValueMatchIndicator';
 import SafeSpotSelector from '@/components/SafeSpotSelector';
-import useCall from '@/hooks/useCall';
-import CallOverlay from '@/components/trade/CallOverlay';
-import IncomingCallOverlay from '@/components/trade/IncomingCallOverlay';
+import useJitsiCall from '@/hooks/useJitsiCall';
+import JitsiCallModal from '@/components/trade/JitsiCallModal';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Send, Check, X, Star, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Send, Check, X, Star, Video, Phone, ShieldX } from 'lucide-react';
 import moment from 'moment';
 
 const STATUS_STYLE = {
@@ -43,16 +42,13 @@ export default function TradeDetail() {
 
   const participantIds = trade ? [trade.proposer_id, trade.receiver_id].filter(Boolean) : [];
   const otherUserId = trade ? (trade.proposer_id === user?.id ? trade.receiver_id : trade.proposer_id) : null;
-  const call = useCall({
-    tradeId: id,
-    tradeParticipantIds: participantIds,
-    meId: user?.id,
-    otherUserId,
-    onError: (k) => toast({ title: t.call?.[k] || k, variant: 'destructive' })
-  });
+  const call = useJitsiCall({ tradeId: id, participantIds, meId: user?.id });
+  const [blockByMe, setBlockByMe] = useState(false);
+  const [blockByOther, setBlockByOther] = useState(false);
+  const blockActive = blockByMe || blockByOther;
   const timeline = useMemo(() => {
     const merged = [
-      ...messages.map((m) => ({ _kind: 'msg', id: m.id, sender_id: m.sender_id, text: m.text, created_date: m.created_date })),
+      ...messages.map((m) => ({ _kind: 'msg', id: m.id, sender_id: m.sender_id, text: m.text, created_date: m.created_date, kind: m.kind, meta: m.meta })),
       ...callEvents.map((e) => ({ _kind: 'call', ...e }))
     ];
     return merged.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
@@ -76,6 +72,15 @@ export default function TradeDetail() {
     try {
       const revs = await base44.entities.Review.filter({ trade_id: id, reviewer_id: user.id }, 'created_date', 5);
       if (revs && revs.length) setMyReview(revs[0]);
+    } catch {}
+    try {
+      const otherId = tr.proposer_id === user.id ? tr.receiver_id : tr.proposer_id;
+      // Has the other user blocked me?
+      const theirs = await base44.entities.UserBlock.filter({ blocked_id: user.id, active: true });
+      setBlockByOther((theirs || []).some((b) => b.blocker_id === otherId));
+      // Have I blocked them?
+      const mine = await base44.entities.UserBlock.filter({ blocked_id: otherId, active: true });
+      setBlockByMe((mine || []).some((b) => b.blocker_id === user.id));
     } catch {}
     setLoading(false);
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -125,6 +130,17 @@ export default function TradeDetail() {
       load();
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleBlockUser = async () => {
+    if (!otherUserId) return;
+    if (window.confirm(t.call.confirmBlockUser)) {
+      try {
+        await base44.entities.UserBlock.create({ blocker_id: user.id, blocked_id: otherUserId, active: true });
+        setBlockByMe(true);
+        toast({ title: t.call.blocked });
+      } catch { /* already blocked */ }
     }
   };
 
@@ -256,7 +272,22 @@ export default function TradeDetail() {
       <div className="rounded-2xl border border-slate-200 bg-white p-4 flex flex-col h-[420px]">
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="font-bold text-slate-900">{t.trade.chat}</h3>
-
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => call.startCall('video', otherName)} disabled={blockActive} title={t.call.startVideo}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 disabled:opacity-50">
+              <Video className="h-4 w-4" />
+            </button>
+            <button onClick={() => call.startCall('voice', otherName)} disabled={blockActive} title={t.call.startVoice}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 disabled:opacity-50">
+              <Phone className="h-4 w-4" />
+            </button>
+            {!blockByMe && (
+              <button onClick={handleBlockUser} title={t.call.blockUser}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
+                <ShieldX className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto space-y-2 pe-1">
           {timeline.length === 0 && <p className="text-center text-sm text-slate-400 mt-8">{t.trade.empty}</p>}
@@ -264,8 +295,19 @@ export default function TradeDetail() {
             <div key={item.id} className="flex justify-center py-1">
               <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] text-slate-500">
                 <span>{callRowText(item)} · {moment(item.created_date).format('LT')}</span>
-
               </div>
+            </div>
+          ) : item.kind === 'system' ? (
+            <div key={item.id} className="flex flex-col items-center gap-1 py-1">
+              <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] text-slate-500">
+                <span>{item.text}</span>
+              </div>
+              {item.meta?.call_status === 'started' && (
+                <button onClick={() => call.joinCall(item.meta)} disabled={!!call.activeCall}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-600 disabled:opacity-50">
+                  {item.meta?.mode === 'video' ? <Video className="h-3.5 w-3.5" /> : <Phone className="h-3.5 w-3.5" />} {t.call.joinCall}
+                </button>
+              )}
             </div>
           ) : (
             <div key={item.id} className={`flex ${item.sender_id === user.id ? 'justify-end' : 'justify-start'}`}>
@@ -276,7 +318,7 @@ export default function TradeDetail() {
           ))}
           <div ref={bottomRef} />
         </div>
-        {trade.status !== 'cancelled' && (
+        {trade.status !== 'cancelled' && !blockActive && (
           <form onSubmit={sendMessage} className="mt-3 flex gap-2">
             <input value={text} onChange={(e) => setText(e.target.value)} placeholder={t.trade.typeMessage} className="flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white" />
             <button type="submit" disabled={sending} className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-500 text-white hover:bg-sky-600 disabled:opacity-60">
@@ -284,23 +326,20 @@ export default function TradeDetail() {
             </button>
           </form>
         )}
+        {blockActive && (
+          <p className="mt-3 text-center text-xs text-amber-700">{t.call.youBlocked}</p>
+        )}
       </div>
 
-      {(call.status === 'connecting' || call.status === 'connected') && (
-        <CallOverlay
-          status={call.status} mode={call.mode} isCaller={call.isCaller}
-          localStream={call.localStream} remoteStream={call.remoteStream}
-          micOn={call.micOn} videoOn={call.videoOn} duration={call.duration}
-          onToggleMute={call.toggleMute} onToggleVideo={call.toggleVideo} onEnd={call.endCall}
-        />
-      )}
-      {call.incoming && (
-        <IncomingCallOverlay
-          incoming={call.incoming}
-          callerName={otherUser?.full_name}
-          tradeTitle={trade.requested_listing_title}
-          onAccept={call.acceptIncoming}
-          onDecline={call.declineIncoming}
+      {call.activeCall && (
+        <JitsiCallModal
+          tradeId={id}
+          callId={call.activeCall.callId}
+          mode={call.activeCall.mode}
+          displayName={user?.full_name}
+          otherName={otherName}
+          onEnded={call.endCall}
+          onBlock={(callId, mode) => { call.blockCaller(callId, mode, otherUserId); setBlockByMe(true); }}
         />
       )}
 

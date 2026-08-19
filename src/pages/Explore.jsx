@@ -33,7 +33,15 @@ export default function Explore() {
       setLoading(true);
       try {
         const data = await base44.entities.Listing.list('-created_date', 200);
-        const visible = (data || []).filter((l) => l.status !== 'hidden');
+        let visible = (data || []).filter((l) => l.status !== 'hidden');
+        // Hide listings from owners who blocked the current viewer (one-directional).
+        if (user?.id) {
+          try {
+            const bl = await base44.entities.UserBlock.filter({ blocked_id: user.id, active: true });
+            const blockedOwners = new Set((bl || []).map((b) => b.blocker_id).filter(Boolean));
+            if (blockedOwners.size) visible = visible.filter((l) => !blockedOwners.has(l.offering_user_id));
+          } catch { /* ignore */ }
+        }
         setListings(visible);
         const ids = [...new Set(visible.map((l) => l.offering_user_id).filter(Boolean))];
         if (ids.length) {

@@ -8,11 +8,43 @@
     },
     "sender_id": {
       "type": "string",
-      "description": "User sending the message"
+      "description": "User sending the message. For system messages, the user whose action triggered it."
     },
     "text": {
       "type": "string",
-      "description": "Message content"
+      "description": "Message content. For system messages, a short human-readable label."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "text",
+        "system"
+      ],
+      "default": "text",
+      "description": "'text' for normal chat messages, 'system' for call/block notifications rendered centered in the thread."
+    },
+    "meta": {
+      "type": "object",
+      "description": "Metadata for system messages, e.g. { call_id, call_status, mode } for call notifications.",
+      "properties": {
+        "call_id": {
+          "type": "string"
+        },
+        "call_status": {
+          "type": "string",
+          "enum": [
+            "started",
+            "ended"
+          ]
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "video",
+            "voice"
+          ]
+        }
+      }
     }
   },
   "required": [

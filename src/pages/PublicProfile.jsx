@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
-import { Star, MapPin, Package } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
+import { Star, MapPin, Package, ShieldX, Unlock } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, categoryLabel, subcatLabel } from '@/lib/categories';
 import ReviewsList from '@/components/reviews/ReviewsList';
@@ -10,11 +11,14 @@ import ReviewsList from '@/components/reviews/ReviewsList';
 export default function PublicProfile() {
   const { id } = useParams();
   const { t } = useI18n();
+  const { user: viewer } = useAuth();
   const [user, setUser] = useState(null);
   const [listings, setListings] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('listings');
+  const [blockByMe, setBlockByMe] = useState(false);
+  const [blockByOther, setBlockByOther] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -28,6 +32,14 @@ export default function PublicProfile() {
         setListings(mine || []);
         const revs = await base44.entities.Review.filter({ reviewee_id: id }, '-created_date', 50);
         setReviews(revs || []);
+        if (viewer?.id && viewer.id !== id) {
+          try {
+            const theirs = await base44.entities.UserBlock.filter({ blocked_id: viewer.id, active: true });
+            setBlockByOther((theirs || []).some((b) => b.blocker_id === id));
+            const mine = await base44.entities.UserBlock.filter({ blocked_id: id, active: true });
+            setBlockByMe((mine || []).some((b) => b.blocker_id === viewer.id));
+          } catch { /* ignore */ }
+        }
       } finally {
         setLoading(false);
       }
@@ -38,8 +50,22 @@ export default function PublicProfile() {
   const avg = reviews.length ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1) : null;
   const initial = (user?.full_name || '?').charAt(0).toUpperCase();
 
+  const blockUser = async () => {
+    try { await base44.entities.UserBlock.create({ blocker_id: viewer.id, blocked_id: id, active: true }); setBlockByMe(true); }
+    catch { /* already blocked */ }
+  };
+  const unblockUser = async () => {
+    try {
+      const mine = await base44.entities.UserBlock.filter({ blocked_id: id, active: true });
+      const rec = (mine || []).find((b) => b.blocker_id === viewer.id);
+      if (rec) await base44.entities.UserBlock.update(rec.id, { active: false, unblocked_date: new Date().toISOString() });
+      setBlockByMe(false);
+    } catch { /* ignore */ }
+  };
+
   if (loading) return <div className="py-20 text-center text-slate-400">{t.common.loading}</div>;
   if (!user) return <div className="py-20 text-center text-slate-400">{t.common.empty}</div>;
+  if (blockByOther) return <div className="py-20 text-center text-slate-400">{t.call.profileUnavailable}</div>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
@@ -58,6 +84,17 @@ export default function PublicProfile() {
               </div>
             )}
           </div>
+          {viewer?.id && viewer.id !== id && (
+            blockByMe ? (
+              <button onClick={unblockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                <Unlock className="h-3.5 w-3.5" /> {t.call.unblock}
+              </button>
+            ) : (
+              <button onClick={blockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                <ShieldX className="h-3.5 w-3.5" /> {t.call.blockUser}
+              </button>
+            )
+          )}
         </div>
         {user.bio && <p className="mt-4 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{user.bio}</p>}
       </div>

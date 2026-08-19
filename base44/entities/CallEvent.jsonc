@@ -39,6 +39,10 @@
         "voice"
       ],
       "description": "Call mode"
+    },
+    "duration": {
+      "type": "integer",
+      "description": "Call duration in seconds (recorded on the 'ended' event)"
     }
   },
   "required": [
