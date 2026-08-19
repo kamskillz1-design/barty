@@ -21,8 +21,8 @@ export default function PublicProfile() {
     (async () => {
       try {
         try {
-          const u = await base44.asServiceRole.entities.User.get(id);
-          setUser(u);
+          const res = await base44.functions.invoke('getUserProfile', { id });
+          setUser(res?.data?.user || res?.user || null);
         } catch {}
         const mine = await base44.entities.Listing.filter({ offering_user_id: id, status: 'available' }, '-created_date', 50);
         setListings(mine || []);

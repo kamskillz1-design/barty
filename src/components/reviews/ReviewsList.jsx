@@ -16,10 +16,15 @@ export default function ReviewsList({ userId }) {
       try {
         const revs = await base44.entities.Review.filter({ reviewee_id: userId }, '-created_date', 50);
         setReviews(revs || []);
+        const ids = [...new Set((revs || []).map((r) => r.reviewer_id).filter(Boolean))];
         const map = {};
-        for (const r of (revs || [])) {
-          if (r.reviewer_id && !map[r.reviewer_id]) {
-            try { map[r.reviewer_id] = await base44.asServiceRole.entities.User.get(r.reviewer_id); } catch { map[r.reviewer_id] = { full_name: 'User' }; }
+        if (ids.length) {
+          try {
+            const res = await base44.functions.invoke('resolveUserNames', { ids });
+            const names = res?.data?.names || res?.names || {};
+            for (const rid of ids) map[rid] = { full_name: names[rid] || 'User' };
+          } catch {
+            for (const rid of ids) map[rid] = { full_name: 'User' };
           }
         }
         setReviewers(map);

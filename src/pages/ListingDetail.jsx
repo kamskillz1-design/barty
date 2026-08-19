@@ -32,8 +32,9 @@ export default function ListingDetail() {
         setListing(l);
         if (l.offering_user_id) {
           try {
-            const u = await base44.asServiceRole.entities.User.get(l.offering_user_id);
-            setOwner(u);
+            const res = await base44.functions.invoke('resolveUserNames', { ids: [l.offering_user_id] });
+            const names = res?.data?.names || res?.names || {};
+            setOwner({ full_name: names[l.offering_user_id] || 'User' });
           } catch {}
         }
         if (user) {

@@ -64,8 +64,10 @@ export default function TradeDetail() {
     const msgs = await base44.entities.Message.filter({ trade_id: id }, 'created_date', 500);
     setMessages(msgs || []);
     try {
-      const o = await base44.asServiceRole.entities.User.get(tr.proposer_id === user.id ? tr.receiver_id : tr.proposer_id);
-      setOtherUser(o);
+      const otherId = tr.proposer_id === user.id ? tr.receiver_id : tr.proposer_id;
+      const res = await base44.functions.invoke('resolveUserNames', { ids: [otherId] });
+      const names = res?.data?.names || res?.names || {};
+      setOtherUser({ full_name: names[otherId] || 'User' });
     } catch {}
     try {
       const ce = await base44.entities.CallEvent.filter({ trade_id: id }, 'created_date', 500);
