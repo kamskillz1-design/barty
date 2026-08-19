@@ -11,12 +11,13 @@ import { Star, Plus, MapPin } from 'lucide-react';
 
 export default function Profile() {
   const { t, lang, setLang } = useI18n();
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const [form, setForm] = useState({ preferred_language: lang, country: '', city: '', town: '', bio: '', avatar_url: '' });
   const [listings, setListings] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveErr, setSaveErr] = useState('');
 
   useEffect(() => {
     if (!user) return;
@@ -40,11 +41,17 @@ export default function Profile() {
 
   const save = async () => {
     setSaving(true);
+    setSaveErr('');
     try {
       await base44.auth.updateMe(form);
       setLang(form.preferred_language);
+      // Refresh the shared auth context so the saved values reflect
+      // everywhere immediately (own profile, listings owner cache, etc.).
+      await refreshUser();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      setSaveErr(t.profile.saveError);
     } finally {
       setSaving(false);
     }
@@ -93,7 +100,8 @@ export default function Profile() {
           <button onClick={save} disabled={saving} className="rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-60">
             {saving ? t.common.loading : t.profile.save}
           </button>
-          {saved && <span className="text-sm text-emerald-600">✓</span>}
+          {saved && <span className="text-sm text-emerald-600">{t.profile.saved}</span>}
+          {saveErr && <span className="text-sm text-red-600">{saveErr}</span>}
           <button onClick={() => logout(true)} className="ms-auto rounded-xl px-4 py-2.5 text-sm font-medium text-slate-500 hover:bg-slate-100">{t.profile.logout}</button>
         </div>
       </div>
