@@ -6,11 +6,8 @@ import { useAuth } from '@/lib/AuthContext';
 import SafetyBanner from '@/components/SafetyBanner';
 import ValueMatchIndicator from '@/components/ValueMatchIndicator';
 import SafeSpotSelector from '@/components/SafeSpotSelector';
-import useJitsiCall from '@/hooks/useJitsiCall';
-import JitsiCallModal from '@/components/trade/JitsiCallModal';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Send, Check, X, Star, Video, Phone, ShieldX } from 'lucide-react';
-import moment from 'moment';
+import { ArrowLeft, Send, Check, X, Star, ShieldX } from 'lucide-react';
 
 const STATUS_STYLE = {
   pending: 'bg-amber-50 text-amber-700',
@@ -36,23 +33,16 @@ export default function TradeDetail() {
   const [recommend, setRecommend] = useState(true);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [otherUser, setOtherUser] = useState(null);
-  const [callEvents, setCallEvents] = useState([]);
   const { toast } = useToast();
   const bottomRef = useRef(null);
 
-  const participantIds = trade ? [trade.proposer_id, trade.receiver_id].filter(Boolean) : [];
   const otherUserId = trade ? (trade.proposer_id === user?.id ? trade.receiver_id : trade.proposer_id) : null;
-  const call = useJitsiCall({ tradeId: id, participantIds, meId: user?.id });
   const [blockByMe, setBlockByMe] = useState(false);
   const [blockByOther, setBlockByOther] = useState(false);
   const blockActive = blockByMe || blockByOther;
   const timeline = useMemo(() => {
-    const merged = [
-      ...messages.map((m) => ({ _kind: 'msg', id: m.id, sender_id: m.sender_id, text: m.text, created_date: m.created_date, kind: m.kind, meta: m.meta })),
-      ...callEvents.map((e) => ({ _kind: 'call', ...e }))
-    ];
-    return merged.sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
-  }, [messages, callEvents]);
+    return [...messages].sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+  }, [messages]);
 
   const load = async () => {
     const tr = await base44.entities.Trade.get(id);
@@ -64,10 +54,6 @@ export default function TradeDetail() {
       const res = await base44.functions.invoke('resolveUserNames', { ids: [otherId] });
       const names = res?.data?.names || res?.names || {};
       setOtherUser({ full_name: names[otherId] || 'User' });
-    } catch {}
-    try {
-      const ce = await base44.entities.CallEvent.filter({ trade_id: id }, 'created_date', 500);
-      setCallEvents(ce || []);
     } catch {}
     try {
       const revs = await base44.entities.Review.filter({ trade_id: id, reviewer_id: user.id }, 'created_date', 5);
@@ -91,10 +77,7 @@ export default function TradeDetail() {
     const unsub = base44.entities.Message.subscribe((event) => {
       if (event.data?.trade_id === id) load();
     });
-    const unsubCe = base44.entities.CallEvent.subscribe((event) => {
-      if (event.data?.trade_id === id) load();
-    });
-    return () => { unsub && unsub(); unsubCe && unsubCe(); };
+    return () => { unsub && unsub(); };
   }, [id, user]);
 
   const updateTrade = (data) => base44.entities.Trade.update(id, data).then((tr) => { setTrade(tr); return tr; });
@@ -164,17 +147,6 @@ export default function TradeDetail() {
   const otherCompleted = outgoing ? trade.receiver_completed : trade.proposer_completed;
   const myCompleted = outgoing ? trade.proposer_completed : trade.receiver_completed;
   const otherName = otherUser?.full_name || t.common.member;
-  const callRowText = (e) => {
-    const actor = e.user_id === user.id ? t.common.you : otherName;
-    const map = {
-      video_started: t.call.startedVideo,
-      voice_started: t.call.startedVoice,
-      ended: e.mode === 'video' ? t.call.endedVideo : t.call.endedVoice,
-      missed: e.mode === 'video' ? t.call.missedVideo : t.call.missedVoice,
-      declined: e.mode === 'video' ? t.call.declinedVideo : t.call.declinedVoice
-    };
-    return (map[e.event] || t.call.ended).replace('{name}', actor);
-  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-5">
@@ -273,14 +245,6 @@ export default function TradeDetail() {
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="font-bold text-slate-900">{t.trade.chat}</h3>
           <div className="flex items-center gap-1.5">
-            <button onClick={() => call.startCall('video', otherName)} disabled={blockActive} title={t.call.startVideo}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 disabled:opacity-50">
-              <Video className="h-4 w-4" />
-            </button>
-            <button onClick={() => call.startCall('voice', otherName)} disabled={blockActive} title={t.call.startVoice}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-50 text-sky-600 hover:bg-sky-100 disabled:opacity-50">
-              <Phone className="h-4 w-4" />
-            </button>
             {!blockByMe && (
               <button onClick={handleBlockUser} title={t.call.blockUser}
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">
@@ -291,23 +255,11 @@ export default function TradeDetail() {
         </div>
         <div className="flex-1 overflow-y-auto space-y-2 pe-1">
           {timeline.length === 0 && <p className="text-center text-sm text-slate-400 mt-8">{t.trade.empty}</p>}
-          {timeline.map((item) => item._kind === 'call' ? (
+          {timeline.map((item) => item.kind === 'system' ? (
             <div key={item.id} className="flex justify-center py-1">
-              <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] text-slate-500">
-                <span>{callRowText(item)} · {moment(item.created_date).format('LT')}</span>
-              </div>
-            </div>
-          ) : item.kind === 'system' ? (
-            <div key={item.id} className="flex flex-col items-center gap-1 py-1">
               <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] text-slate-500">
                 <span>{item.text}</span>
               </div>
-              {item.meta?.call_status === 'started' && (
-                <button onClick={() => call.joinCall(item.meta)} disabled={!!call.activeCall}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-sky-600 disabled:opacity-50">
-                  {item.meta?.mode === 'video' ? <Video className="h-3.5 w-3.5" /> : <Phone className="h-3.5 w-3.5" />} {t.call.joinCall}
-                </button>
-              )}
             </div>
           ) : (
             <div key={item.id} className={`flex ${item.sender_id === user.id ? 'justify-end' : 'justify-start'}`}>
@@ -330,18 +282,6 @@ export default function TradeDetail() {
           <p className="mt-3 text-center text-xs text-amber-700">{t.call.youBlocked}</p>
         )}
       </div>
-
-      {call.activeCall && (
-        <JitsiCallModal
-          tradeId={id}
-          callId={call.activeCall.callId}
-          mode={call.activeCall.mode}
-          displayName={user?.full_name}
-          otherName={otherName}
-          onEnded={call.endCall}
-          onBlock={(callId, mode) => { call.blockCaller(callId, mode, otherUserId); setBlockByMe(true); }}
-        />
-      )}
 
       <SafetyBanner />
     </div>
