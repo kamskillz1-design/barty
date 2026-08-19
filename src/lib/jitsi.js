@@ -31,6 +31,7 @@ export function jitsiConfig(mode) {
   return {
     configOverwrite: {
       startAudioOnly: mode === 'voice',
+      startWithVideoMuted: mode === 'voice',
       prejoinPageEnabled: false,
       disableInviteFunctions: true,
       // Keep only the controls useful for a 1:1 barter call.
