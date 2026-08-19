@@ -32,6 +32,7 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
   const modeRef = useRef(null);
   const pendingIceRef = useRef([]);
   const answeredRef = useRef(false);
+  const isCallerRef = useRef(false);
   const statusRef = useRef('idle');
   const incomingRef = useRef(null);
   const timerRef = useRef(null);
@@ -74,6 +75,9 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
     clearMissed();
     setStatusBoth('connected');
     startTimer();
+    // Log a "started" row only once (by the caller) AND only after the call has
+    // actually connected — so a failed/missed call leaves no false chat row.
+    if (isCallerRef.current) logEvent(modeRef.current === 'video' ? 'video_started' : 'voice_started');
   };
 
   const cleanupCall = useCallback(() => {
@@ -87,7 +91,7 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
     callIdRef.current = null;
     modeRef.current = null;
     setMicOn(true); setVideoOn(true);
-    setMode(null); setIsCaller(false);
+    setMode(null); setIsCaller(false); isCallerRef.current = false;
     setStatusBoth('idle');
   }, []);
 
@@ -97,14 +101,16 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
     const pc = new RTCPeerConnection(ICE_SERVERS);
     pcRef.current = pc;
     pc.ontrack = (ev) => {
+      // Buffer the remote track into a persistent stream. "Connected" status is
+      // driven by the ICE connection state below, not by track arrival.
       if (!remoteRef.current) remoteRef.current = new MediaStream();
       remoteRef.current.addTrack(ev.track);
       setRemoteStream(new MediaStream(remoteRef.current.getTracks()));
-      if (statusRef.current === 'connecting') onConnected();
     };
     pc.onicecandidate = (ev) => { if (ev.candidate) sendSignal('ice', JSON.stringify(ev.candidate)); };
     pc.oniceconnectionstatechange = () => {
       const st = pc.iceConnectionState;
+      if ((st === 'connected' || st === 'completed') && statusRef.current === 'connecting') onConnected();
       if ((st === 'disconnected' || st === 'failed') && statusRef.current === 'connected') endCall();
     };
     return pc;
@@ -123,7 +129,7 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
     if (!window.RTCPeerConnection || !navigator.mediaDevices?.getUserMedia) { onError?.('noWebrtc'); return; }
     if (statusRef.current !== 'idle') return;
     setStatusBoth('connecting');
-    setMode(m); modeRef.current = m; setIsCaller(true);
+    setMode(m); modeRef.current = m; setIsCaller(true); isCallerRef.current = true;
     callIdRef.current = crypto.randomUUID();
     let stream;
     try {
@@ -139,7 +145,6 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       await sendSignal('offer', JSON.stringify(offer));
-      await logEvent(m === 'video' ? 'video_started' : 'voice_started');
     } catch {
       onError?.('noWebrtc');
       hardReset();
@@ -159,7 +164,7 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
     if (!inc) return;
     setIncomingBoth(null);
     if (!window.RTCPeerConnection || !navigator.mediaDevices?.getUserMedia) { onError?.('noWebrtc'); return; }
-    callIdRef.current = inc.callId; modeRef.current = inc.mode; setMode(inc.mode); setIsCaller(false);
+    callIdRef.current = inc.callId; modeRef.current = inc.mode; setMode(inc.mode); setIsCaller(false); isCallerRef.current = false;
     setStatusBoth('connecting');
     answeredRef.current = true;
     let stream;
@@ -239,7 +244,6 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
         try { await pc.setRemoteDescription(JSON.parse(sig.payload)); } catch {}
         for (const c of pendingIceRef.current) { try { await pc.addIceCandidate(JSON.parse(c)); } catch {} }
         pendingIceRef.current = [];
-        if (statusRef.current === 'connecting') onConnected();
       }
     } else if (sig.kind === 'decline' || sig.kind === 'end') {
       setIncomingBoth(null);
