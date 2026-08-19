@@ -154,7 +154,7 @@ export default function ListingDetail() {
             </button>
           ) : (
             <button
-              onClick={() => setProposing(true)}
+              onClick={() => (user ? setProposing(true) : navigate('/login'))}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-500 px-5 py-3 text-sm font-semibold text-white hover:bg-sky-600 transition"
             >
               <ArrowRight className="h-4 w-4" /> {listing.is_seeking_anything ? t.listing.counterOffer : (listing.intent || 'offering') === 'seeking' ? t.listing.fulfillRequest : t.listing.proposeTrade}

@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { Compass, Package, ArrowLeftRight, User, LogOut, Sparkles, ShieldCheck } from 'lucide-react';
+import { Compass, Package, ArrowLeftRight, User, LogOut, LogIn, Sparkles } from 'lucide-react';
 
 export default function Layout() {
   const { t } = useI18n();
@@ -22,7 +22,6 @@ export default function Layout() {
     { to: '/explore', label: t.nav.explore, icon: Compass },
     { to: '/my-listings', label: t.nav.myListings, icon: Package },
     { to: '/trades', label: t.nav.trades, icon: ArrowLeftRight },
-    { to: '/safe-spots', label: t.nav.hubs, icon: ShieldCheck },
     { to: '/profile', label: t.nav.profile, icon: User }
   ];
 
@@ -55,13 +54,22 @@ export default function Layout() {
           </nav>
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
-            <button
-              onClick={() => logout(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
-              title={t.profile.logout}
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
+            {user ? (
+              <button
+                onClick={() => logout(true)}
+                className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition"
+                title={t.profile.logout}
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1.5 rounded-full bg-sky-500 px-3.5 py-2 text-sm font-semibold text-white hover:bg-sky-600 transition"
+              >
+                <LogIn className="h-4 w-4" /> {t.nav.profile}
+              </Link>
+            )}
           </div>
         </div>
       </header>

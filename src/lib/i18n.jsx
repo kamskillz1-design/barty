@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 const translations = {
   en: {
     _dir: 'ltr',
-    appName: 'Barti',
+    appName: 'iBarti',
     tagline: 'Exchange goods and services, no money needed',
     nav: { explore: 'Explore', myListings: 'My Listings', trades: 'Trades', hubs: 'Hubs', profile: 'Profile' },
     local: { title: 'Near you', viewAll: 'Browse all', sub: 'Listings in your area. Use the search to explore anywhere worldwide.', empty: 'No listings in your area yet — set your city in Profile to see local items.' },
@@ -17,12 +17,12 @@ const translations = {
     value: { fair: 'Fair Exchange', balanced: 'Well Balanced', slightlyUnbalanced: 'Slightly Unbalanced', unbalanced: 'Unbalanced Exchange', explanation: 'This is a non-monetary fairness indicator. No cash values are involved.' },
     safety: { title: 'Stay Safe', body: 'Always meet in a public place and inspect goods or services thoroughly in person before finalizing. Exchanges are final once you complete the trade in person.' },
     profile: { title: 'Profile', language: 'Language', country: 'Country', city: 'City / Town', town: 'Village / Area', bio: 'Bio', save: 'Save Profile', myListings: 'My Listings', reviews: 'Reviews', logout: 'Log out', noListings: 'You have no listings yet', noReviews: 'No reviews yet', createListing: 'Create a listing' },
-    common: { loading: 'Loading...', empty: 'Nothing here yet', create: 'Create', close: 'Close', you: 'You', member: 'Barti member', propose: 'Propose Trade' },
-    landing: { hero: 'Trade anything, anywhere — without money', sub: 'Barti connects people worldwide to exchange goods and services through fair bartering across countries, cities, and villages.', cta: 'Start Exploring', feature1: 'Goods & Services', feature1d: 'List physical items or skills you can offer.', feature2: 'Smart Matching', feature2d: 'A built-in fairness engine keeps exchanges balanced.', feature3: 'Global & Local', feature3d: 'Find barters near you or across the world.' }
+    common: { loading: 'Loading...', empty: 'Nothing here yet', create: 'Create', close: 'Close', you: 'You', member: 'iBarti member', propose: 'Propose Trade' },
+    landing: { hero: 'Trade anything, anywhere — without money', sub: 'iBarti connects people worldwide to exchange goods and services through fair bartering across countries, cities, and villages.', cta: 'Start Exploring', feature1: 'Goods & Services', feature1d: 'List physical items or skills you can offer.', feature2: 'Smart Matching', feature2d: 'A built-in fairness engine keeps exchanges balanced.', feature3: 'Global & Local', feature3d: 'Find barters near you or across the world.' }
   },
   es: {
     _dir: 'ltr',
-    appName: 'Barti',
+    appName: 'iBarti',
     tagline: 'Intercambia bienes y servicios, sin dinero',
     nav: { explore: 'Explorar', myListings: 'Mis Anuncios', trades: 'Intercambios', hubs: 'Puntos Seguros', profile: 'Perfil' },
     local: { title: 'Cerca de ti', viewAll: 'Ver todo', sub: 'Anuncios en tu zona. Usa la búsqueda para explorar cualquier lugar del mundo.', empty: 'Aún no hay anuncios en tu zona — configura tu ciudad en el Perfil para ver artículos locales.' },
@@ -35,12 +35,12 @@ const translations = {
     value: { fair: 'Intercambio Justo', balanced: 'Bien Equilibrado', slightlyUnbalanced: 'Ligeramente Desequilibrado', unbalanced: 'Intercambio Desequilibrado', explanation: 'Este es un indicador de equidad no monetario. No hay valores en efectivo.' },
     safety: { title: 'Mantente Seguro', body: 'Reúnete siempre en un lugar público e inspecciona los bienes o servicios minuciosamente en persona antes de finalizar. Los intercambios son definitivos una vez completados en persona.' },
     profile: { title: 'Perfil', language: 'Idioma', country: 'País', city: 'Ciudad / Pueblo', town: 'Aldea / Zona', verified: 'ID Verificado', notVerified: 'No verificado', verify: 'Verificar ID Oficial', verifyTitle: 'Verifica tu identidad', verifyDesc: 'Confirma tu identidad con un documento oficial. Esto desbloquea la insignia de verificado en tu perfil.', legalName: 'Nombre legal completo', docType: 'Tipo de documento', dtPassport: 'Pasaporte', dtNationalID: 'Carné de identidad nacional', dtLicense: 'Licencia de conducir', dtResPermit: 'Permiso de residencia', docNumber: 'Número de documento', issuingCountry: 'País emisor', ack: 'Confirmo que estos datos son exactos.', verifyNow: 'Verificar ahora', verifying: 'Verificando...', verifySuccess: '¡Identidad verificada!', verifyError: 'La verificación falló. Inténtalo de nuevo.', bio: 'Bio', save: 'Guardar Perfil', myListings: 'Mis Anuncios', reviews: 'Reseñas', logout: 'Cerrar sesión', noListings: 'No tienes anuncios aún', noReviews: 'Sin reseñas aún', createListing: 'Crear un anuncio' },
-    common: { loading: 'Cargando...', empty: 'Nada por aquí aún', create: 'Crear', close: 'Cerrar', you: 'Tú', member: 'Miembro de Barti', propose: 'Proponer Intercambio' },
-    landing: { hero: 'Intercambia cualquier cosa, en cualquier lugar — sin dinero', sub: 'Barti conecta personas en todo el mundo para intercambiar bienes y servicios mediante trueque justo entre países, ciudades y aldeas.', cta: 'Empezar a Explorar', feature1: 'Bienes y Servicios', feature1d: 'Lista artículos físicos o habilidades que puedas ofrecer.', feature2: 'Coincidencia Inteligente', feature2d: 'Un motor de equidad integrado mantiene los intercambios balanceados.', feature3: 'Global y Local', feature3d: 'Encuentra trueques cerca de ti o por el mundo.' }
+    common: { loading: 'Cargando...', empty: 'Nada por aquí aún', create: 'Crear', close: 'Cerrar', you: 'Tú', member: 'Miembro de iBarti', propose: 'Proponer Intercambio' },
+    landing: { hero: 'Intercambia cualquier cosa, en cualquier lugar — sin dinero', sub: 'iBarti conecta personas en todo el mundo para intercambiar bienes y servicios mediante trueque justo entre países, ciudades y aldeas.', cta: 'Empezar a Explorar', feature1: 'Bienes y Servicios', feature1d: 'Lista artículos físicos o habilidades que puedas ofrecer.', feature2: 'Coincidencia Inteligente', feature2d: 'Un motor de equidad integrado mantiene los intercambios balanceados.', feature3: 'Global y Local', feature3d: 'Encuentra trueques cerca de ti o por el mundo.' }
   },
   fr: {
     _dir: 'ltr',
-    appName: 'Barti',
+    appName: 'iBarti',
     tagline: 'Échangez biens et services, sans argent',
     nav: { explore: 'Explorer', myListings: 'Mes Annonces', trades: 'Échanges', hubs: 'Lieux Sûrs', profile: 'Profil' },
     local: { title: 'Près de chez vous', viewAll: 'Tout voir', sub: 'Annonces dans votre région. Utilisez la recherche pour explorer partout dans le monde.', empty: 'Aucune annonce près de chez vous — définissez votre ville dans le Profil.' },
@@ -53,12 +53,12 @@ const translations = {
     value: { fair: 'Échange Équitable', balanced: 'Bien Équilibré', slightlyUnbalanced: 'Légèrement Déséquilibré', unbalanced: 'Échange Déséquilibré', explanation: 'Ceci est un indicateur d\'équité non monétaire. Aucune valeur monétaire.' },
     safety: { title: 'Restez en Sécurité', body: 'Rencontrez toujours dans un lieu public et inspectez les biens ou services en personne avant de finaliser. Les échanges sont définitifs une fois terminés en personne.' },
     profile: { title: 'Profil', language: 'Langue', country: 'Pays', city: 'Ville / Village', town: 'Hameau / Quartier', verified: 'ID Vérifié', notVerified: 'Non vérifié', verify: 'Vérifier l\'ID Officiel', verifyTitle: 'Vérifiez votre identité', verifyDesc: 'Confirmez votre identité avec un document officiel. Cela débloque le badge vérifié sur votre profil.', legalName: 'Nom légal complet', docType: 'Type de document', dtPassport: 'Passeport', dtNationalID: 'Carte d\'identité nationale', dtLicense: 'Permis de conduire', dtResPermit: 'Permis de résidence', docNumber: 'Numéro de document', issuingCountry: 'Pays émetteur', ack: 'Je confirme que ces informations sont exactes.', verifyNow: 'Vérifier maintenant', verifying: 'Vérification...', verifySuccess: 'Identité vérifiée !', verifyError: 'La vérification a échoué. Réessayez.', bio: 'Bio', save: 'Enregistrer le Profil', myListings: 'Mes Annonces', reviews: 'Avis', logout: 'Déconnexion', noListings: 'Aucune annonce', noReviews: 'Aucun avis', createListing: 'Créer une annonce' },
-    common: { loading: 'Chargement...', empty: 'Rien ici', create: 'Créer', close: 'Fermer', you: 'Vous', member: 'Membre Barti', propose: 'Proposer un Échange' },
-    landing: { hero: 'Échangez tout, partout — sans argent', sub: 'Barti connecte des personnes du monde entier pour échanger biens et services via un troc équitable entre pays, villes et villages.', cta: 'Commencer à Explorer', feature1: 'Biens & Services', feature1d: 'Listez des objets physiques ou des compétences.', feature2: 'Correspondance Intelligente', feature2d: 'Un moteur d\'équité intégré garde les échanges équilibrés.', feature3: 'Global & Local', feature3d: 'Trouvez des trocs près de chez vous ou partout.' }
+    common: { loading: 'Chargement...', empty: 'Rien ici', create: 'Créer', close: 'Fermer', you: 'Vous', member: 'Membre iBarti', propose: 'Proposer un Échange' },
+    landing: { hero: 'Échangez tout, partout — sans argent', sub: 'iBarti connecte des personnes du monde entier pour échanger biens et services via un troc équitable entre pays, villes et villages.', cta: 'Commencer à Explorer', feature1: 'Biens & Services', feature1d: 'Listez des objets physiques ou des compétences.', feature2: 'Correspondance Intelligente', feature2d: 'Un moteur d\'équité intégré garde les échanges équilibrés.', feature3: 'Global & Local', feature3d: 'Trouvez des trocs près de chez vous ou partout.' }
   },
   ar: {
     _dir: 'rtl',
-    appName: 'بارتي',
+    appName: 'iBarti',
     tagline: 'تبادل السلع والخدمات دون أموال',
     nav: { explore: 'استكشاف', myListings: 'إعلاناتي', trades: 'المقايضات', hubs: 'النقاط الآمنة', profile: 'الملف الشخصي' },
     local: { title: 'قريب منك', viewAll: 'تصفح الكل', sub: 'إعلانات في منطقتك. استخدم البحث لاستكشاف أي مكان حول العالم.', empty: 'لا إعلانات في منطقتك بعد — اضبط مدينتك في الملف الشخصي لمعرفة العناصر المحلية.' },
@@ -71,8 +71,8 @@ const translations = {
     value: { fair: 'مقايضة عادلة', balanced: 'متوازنة جيدًا', slightlyUnbalanced: 'غير متوازنة قليلاً', unbalanced: 'مقايضة غير متوازنة', explanation: 'هذا مؤشر عدالة غير نقدي. لا توجد قيم نقدية.' },
     safety: { title: 'ابقَ آمنًا', body: 'التقِ دائمًا في مكان عام وفحص السلع أو الخدمات بدقة شخصيًا قبل الإتمام. المقايضات نهائية بعد إتمامها شخصيًا.' },
     profile: { title: 'الملف الشخصي', language: 'اللغة', country: 'الدولة', city: 'المدينة / البلدة', town: 'القرية / المنطقة', verified: 'هوية موثقة', notVerified: 'غير موثق', verify: 'وثّق هويتك الرسمية', verifyTitle: 'تحقق من هويتك', verifyDesc: 'أكّد هويتك بمستند رسمي حكومي. يُفعّل شارة موثّق على ملفك الشخصي.', legalName: 'الاسم القانوني الكامل', docType: 'نوع المستند', dtPassport: 'جواز سفر', dtNationalID: 'بطاقة هوية وطنية', dtLicense: 'رخصة قيادة', dtResPermit: 'تصريح إقامة', docNumber: 'رقم المستند', issuingCountry: 'الدولة المُصدِرة', ack: 'أؤكد أن هذه البيانات دقيقة.', verifyNow: 'تحقق الآن', verifying: 'جارٍ التحقق...', verifySuccess: 'تم التحقق من الهوية!', verifyError: 'فشل التحقق. حاول مرة أخرى.', bio: 'نبذة', save: 'حفظ الملف', myListings: 'إعلاناتي', reviews: 'التقييمات', logout: 'تسجيل الخروج', noListings: 'لا إعلانات بعد', noReviews: 'لا تقييمات بعد', createListing: 'أنشئ إعلانًا' },
-    common: { loading: 'جارٍ التحميل...', empty: 'لا شيء هنا', create: 'إنشاء', close: 'إغلاق', you: 'أنت', member: 'عضو بارتي', propose: 'اقترح مقايضة' },
-    landing: { hero: 'قايض أي شيء، في أي مكان — دون أموال', sub: 'يربط بارتي الناس حول العالم لتبادل السلع والخدمات عبر مقايضة عادلة بين الدول والمدن والقرى.', cta: 'ابدأ الاستكشاف', feature1: 'سلع وخدمات', feature1d: 'أدر عناصر مادية أو مهارات يمكنك تقديمها.', feature2: 'مطابقة ذكية', feature2d: 'محرك عدالة مدمج يبقي المقايضات متوازنة.', feature3: 'عالمي ومحلي', feature3d: 'اعثر على مقايضات قربك أو حول العالم.' }
+    common: { loading: 'جارٍ التحميل...', empty: 'لا شيء هنا', create: 'إنشاء', close: 'إغلاق', you: 'أنت', member: 'عضو iBarti', propose: 'اقترح مقايضة' },
+    landing: { hero: 'قايض أي شيء، في أي مكان — دون أموال', sub: 'يربط iBarti الناس حول العالم لتبادل السلع والخدمات عبر مقايضة عادلة بين الدول والمدن والقرى.', cta: 'ابدأ الاستكشاف', feature1: 'سلع وخدمات', feature1d: 'أدر عناصر مادية أو مهارات يمكنك تقديمها.', feature2: 'مطابقة ذكية', feature2d: 'محرك عدالة مدمج يبقي المقايضات متوازنة.', feature3: 'عالمي ومحلي', feature3d: 'اعثر على مقايضات قربك أو حول العالم.' }
   }
 };
 

@@ -21,7 +21,6 @@ import MyListings from '@/pages/MyListings';
 import Trades from '@/pages/Trades';
 import TradeDetail from '@/pages/TradeDetail';
 import Profile from '@/pages/Profile';
-import SafeSpots from '@/pages/SafeSpots';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -55,18 +54,19 @@ const AuthenticatedApp = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route element={<Layout />}>
+          <Route path="/" element={<Explore />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/listings/:id" element={<ListingDetail />} />
+        </Route>
         <Route element={<ProtectedRoute unauthenticatedElement={<Navigate to="/login" replace />} />}>
           <Route element={<Layout />}>
-            <Route path="/" element={<Explore />} />
-            <Route path="/explore" element={<Explore />} />
             <Route path="/listings/new" element={<CreateListing />} />
             <Route path="/listings/:id/edit" element={<EditListing />} />
-            <Route path="/listings/:id" element={<ListingDetail />} />
             <Route path="/my-listings" element={<MyListings />} />
             <Route path="/trades" element={<Trades />} />
             <Route path="/trades/:id" element={<TradeDetail />} />
             <Route path="/profile" element={<Profile />} />
-            <Route path="/safe-spots" element={<SafeSpots />} />
           </Route>
         </Route>
         <Route path="*" element={<PageNotFound />} />
