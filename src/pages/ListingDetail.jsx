@@ -168,7 +168,7 @@ export default function ListingDetail() {
                 {(owner.full_name || '?').charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-slate-900">{owner.full_name || '—'}</p>
+                <p className="text-sm font-semibold text-slate-900 notranslate" translate="no">{owner.full_name || '—'}</p>
               </div>
             </Link>
           )}

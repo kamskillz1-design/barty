@@ -38,7 +38,7 @@ export default function CommentItem({ comment, canManage, onDelete, onEdit, t })
       </Link>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <Link to={`/users/${comment.author_id}`} className="text-sm font-semibold text-slate-900 hover:underline">
+          <Link to={`/users/${comment.author_id}`} className="text-sm font-semibold text-slate-900 hover:underline notranslate" translate="no">
             {comment.author_name || 'User'}
           </Link>
           <span className="text-xs text-slate-400">{timeAgo(comment.created_date)}{comment.edited ? ` · ${t.community?.comments?.edited || 'edited'}` : ''}</span>

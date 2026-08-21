@@ -28,7 +28,7 @@ export default function ReviewCard({ review, reviewer }) {
           </div>
         </Link>
         <div className="flex-1 min-w-0">
-          <Link to={`/users/${review.reviewer_id}`} className="text-sm font-semibold text-slate-900 hover:underline">
+          <Link to={`/users/${review.reviewer_id}`} className="text-sm font-semibold text-slate-900 hover:underline notranslate" translate="no">
             {name}
           </Link>
           <div className="mt-0.5 flex items-center gap-2">

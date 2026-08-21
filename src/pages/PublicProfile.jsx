@@ -75,7 +75,7 @@ export default function PublicProfile() {
             {initial}
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-slate-900">{user.full_name || '—'}</h1>
+            <h1 className="text-xl font-bold text-slate-900 notranslate" translate="no">{user.full_name || '—'}</h1>
             {user.city && <p className="mt-1 flex items-center gap-1 text-sm text-slate-500"><MapPin className="h-3.5 w-3.5" />{user.city}{user.country ? `, ${user.country}` : ''}</p>}
             {avg && (
               <div className="mt-1.5 flex items-center gap-1 text-sm font-medium text-amber-600">

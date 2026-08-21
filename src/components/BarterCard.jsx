@@ -39,7 +39,7 @@ export default function BarterCard({ listing, ownerName }) {
           <User className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-slate-700">{ownerName || t.common.member}</p>
+          <p className="truncate text-sm font-medium text-slate-700 notranslate" translate="no">{ownerName || t.common.member}</p>
           <p className="text-xs text-slate-400">{listing.created_date ? moment(listing.created_date).fromNow() : ''}</p>
         </div>
         {exchLoc && (
