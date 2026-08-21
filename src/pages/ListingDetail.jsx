@@ -139,9 +139,18 @@ export default function ListingDetail() {
             {listing.is_open_to_anything ? (
               <p className="mt-1 text-sm font-semibold text-emerald-700">✨ {t.listing.openToAnything}</p>
             ) : (
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                {listing.want_category ? `${categoryLabel(t, listing.want_category)}${listing.want_subcategory ? ` · ${subcatLabel(t, listing.want_subcategory)}` : ''}` : <span className="italic text-slate-400">{t.listing.lookingFor}</span>}
-              </p>
+              <>
+                <p className="mt-1 text-sm font-semibold text-slate-800">
+                  {listing.want_title
+                    ? listing.want_title
+                    : listing.want_category
+                      ? `${categoryLabel(t, listing.want_category)}${listing.want_subcategory ? ` · ${subcatLabel(t, listing.want_subcategory)}` : ''}`
+                      : <span className="italic text-slate-400">{t.listing.lookingFor}</span>}
+                </p>
+                {listing.want_description && (
+                  <p className="mt-1 text-sm text-slate-600 leading-snug whitespace-pre-line">{listing.want_description}</p>
+                )}
+              </>
             )}
           </div>
 

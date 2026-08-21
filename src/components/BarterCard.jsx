@@ -85,8 +85,13 @@ export default function BarterCard({ listing, ownerName }) {
             <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
               ✨ {t.listing.openToAnything}
             </span>
-          ) : wantLine ? (
-            <p className="line-clamp-2 text-sm font-semibold text-slate-900">{wantLine}</p>
+          ) : (listing.want_title || wantLine) ? (
+            <>
+              <p className="line-clamp-2 text-sm font-semibold text-slate-900">{listing.want_title || wantLine}</p>
+              {listing.want_description && (
+                <p className="mt-0.5 line-clamp-1 text-xs text-slate-500">{listing.want_description}</p>
+              )}
+            </>
           ) : (
             <span className="text-sm italic text-slate-400">{t.listing.lookingFor}</span>
           )}
