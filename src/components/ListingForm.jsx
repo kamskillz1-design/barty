@@ -6,6 +6,7 @@ import { COUNTRIES } from '@/lib/geoData';
 import { EXCHANGE_TYPES, categoriesForType, getCategory, EXCHANGE_LOCATIONS, subcatKey, OTHER_KEY } from '@/lib/categories';
 import { ImagePlus, X, Save, ArrowLeftRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { useCanAct } from '@/hooks/useSuspension';
 
 /**
  * Reusable listing form (I Have / I Want architecture) used by CreateListing
@@ -19,6 +20,7 @@ import { base44 } from '@/api/base44Client';
 export default function ListingForm({ initialValues, onSubmit, saving, submitLabel }) {
   const { t } = useI18n();
   const { user } = useAuth();
+  const assertCanAct = useCanAct();
 
   const [form, setForm] = useState(() => ({
     title: '', description: '',
@@ -94,6 +96,7 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
       want_title: form.is_open_to_anything ? '' : form.want_title,
       want_description: form.is_open_to_anything ? '' : form.want_description
     };
+    if (!(await assertCanAct())) return;
     await onSubmit(data);
   };
 

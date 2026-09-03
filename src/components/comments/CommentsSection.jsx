@@ -5,10 +5,12 @@ import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { MessageSquare, Send, Pencil, Trash2, X, Check } from 'lucide-react';
 import CommentItem from '@/components/comments/CommentItem';
+import { useCanAct } from '@/hooks/useSuspension';
 
 export default function CommentsSection({ listingId, listingOwnerId }) {
   const { t } = useI18n();
   const { user } = useAuth();
+  const assertCanAct = useCanAct();
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
@@ -39,6 +41,7 @@ export default function CommentsSection({ listingId, listingOwnerId }) {
   const submit = async () => {
     const body = text.trim();
     if (!body || !user) return;
+    if (!(await assertCanAct())) return;
     setPosting(true);
     try {
       await base44.entities.Comment.create({

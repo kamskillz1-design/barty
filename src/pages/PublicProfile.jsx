@@ -7,6 +7,7 @@ import { Star, MapPin, Package, ShieldX, Unlock } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, categoryLabel, subcatLabel } from '@/lib/categories';
 import ReviewsList from '@/components/reviews/ReviewsList';
+import ReportUserButton from '@/components/ReportUserButton';
 
 export default function PublicProfile() {
   const { id } = useParams();
@@ -85,15 +86,18 @@ export default function PublicProfile() {
             )}
           </div>
           {viewer?.id && viewer.id !== id && (
-            blockByMe ? (
-              <button onClick={unblockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
-                <Unlock className="h-3.5 w-3.5" /> {t.call.unblock}
-              </button>
-            ) : (
-              <button onClick={blockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
-                <ShieldX className="h-3.5 w-3.5" /> {t.call.blockUser}
-              </button>
-            )
+            <div className="flex items-center gap-2">
+              <ReportUserButton userId={id} />
+              {blockByMe ? (
+                <button onClick={unblockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                  <Unlock className="h-3.5 w-3.5" /> {t.call.unblock}
+                </button>
+              ) : (
+                <button onClick={blockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                  <ShieldX className="h-3.5 w-3.5" /> {t.call.blockUser}
+                </button>
+              )}
+            </div>
           )}
         </div>
         {user.bio && <p className="mt-4 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{user.bio}</p>}

@@ -10,6 +10,7 @@ import CommentsSection from '@/components/comments/CommentsSection';
 import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X, Pencil, Globe, ShieldAlert } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
+import { useCanAct } from '@/hooks/useSuspension';
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -24,6 +25,7 @@ export default function ListingDetail() {
   const [selected, setSelected] = useState(null);
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const assertCanAct = useCanAct();
 
   useEffect(() => {
     (async () => {
@@ -51,6 +53,7 @@ export default function ListingDetail() {
 
   const submitProposal = async () => {
     if (!selected) return;
+    if (!(await assertCanAct())) { setProposing(false); return; }
     setSending(true);
     try {
       const offered = myListings.find((m) => m.id === selected);
