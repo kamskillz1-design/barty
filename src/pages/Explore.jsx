@@ -169,7 +169,7 @@ export default function Explore() {
       </div>
 
       {/* Local discovery */}
-      <LocalDiscovery listings={listings} user={user} />
+      <LocalDiscovery listings={listings} />
 
       {/* Grid */}
       {loading ? (
