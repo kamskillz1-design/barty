@@ -16,13 +16,13 @@ const readGoogTrans = () => {
   } catch { return ''; }
 };
 
-const SOURCE = 'es';
+const SOURCE = 'en';
 
 export default function GTranslateSwitcher() {
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [current, setCurrent] = useState(() => readGoogTrans() || SOURCE);
-  const currentLabel = LANGUAGES.find((l) => l.code === current)?.label || 'Español';
+  const currentLabel = LANGUAGES.find((l) => l.code === current)?.label || 'English';
 
   const select = (code) => {
     if (switching) return;
@@ -30,6 +30,7 @@ export default function GTranslateSwitcher() {
     if (code === current) return;
     if (code === SOURCE) {
       setSwitching(true);
+      try { localStorage.setItem('barti_gt_chosen', 'yes'); } catch { /* storage blocked */ }
       // Clear the cookie (expire in the past on every path variant GTranslate may use), then reload.
       document.cookie = 'googtrans=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
       document.cookie = 'googtrans=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=' + window.location.hostname;
@@ -38,12 +39,13 @@ export default function GTranslateSwitcher() {
     }
     // Non-English: persist the choice and translate the current DOM in place via
     // GTranslate's engine (no reload → fast, no stale-restore issue).
-    document.cookie = `googtrans=/es/${code};path=/`;
+    document.cookie = `googtrans=/en/${code};path=/`;
+    try { localStorage.setItem('barti_gt_chosen', 'yes'); } catch { /* storage blocked */ }
     setSwitching(true);
     let tries = 0;
     const go = () => {
       if (typeof window.doGTranslate === 'function') {
-        try { window.doGTranslate('es|' + code); } catch { /* ignore */ }
+        try { window.doGTranslate('en|' + code); } catch { /* ignore */ }
         setCurrent(code);
         setSwitching(false);
       } else if (tries++ < 40) {
