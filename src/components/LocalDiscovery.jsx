@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
-import ListingCard from '@/components/ListingCard';
+import BarterCard from '@/components/BarterCard';
 import { MapPin, ArrowRight } from 'lucide-react';
 
 /**
@@ -45,7 +45,7 @@ export default function LocalDiscovery({ listings }) {
         <p className="rounded-2xl border border-dashed border-slate-300 bg-white py-10 text-center text-sm text-slate-400">{t.local.empty}</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {local.map((l) => <ListingCard key={l.id} listing={l} />)}
+          {local.map((l) => <BarterCard key={l.id} listing={l} />)}
         </div>
       )}
     </section>
