@@ -9,6 +9,7 @@ import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import { I18nProvider } from '@/lib/i18n';
+import { LocationProvider } from '@/lib/LocationContext';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -52,7 +53,8 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <I18nProvider>
-      <Routes>
+      <LocationProvider>
+        <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -77,7 +79,8 @@ const AuthenticatedApp = () => {
           <Route path="/admin" element={<Admin />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />
-      </Routes>
+        </Routes>
+      </LocationProvider>
     </I18nProvider>
   );
 };

@@ -7,6 +7,7 @@ import { EXCHANGE_TYPES, categoriesForType, getCategory, EXCHANGE_LOCATIONS, sub
 import { ImagePlus, X, Save, ArrowLeftRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useCanAct } from '@/hooks/useSuspension';
+import { geocode } from '@/lib/geocode';
 
 /**
  * Reusable listing form (I Have / I Want architecture) used by CreateListing
@@ -97,6 +98,14 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
       want_description: form.is_open_to_anything ? '' : form.want_description
     };
     if (!(await assertCanAct())) return;
+    // Best-effort geocode the listing's location to coordinates so Explore can
+    // rank it by distance. Non-blocking: a failed lookup just saves without lat/lng.
+    if (!data.lat && !data.lng) {
+      const q = [data.city, data.town, data.country].filter(Boolean).join(', ');
+      if (q) {
+        try { const c = await geocode(q); if (c) { data.lat = c.lat; data.lng = c.lng; } } catch { /* best-effort */ }
+      }
+    }
     await onSubmit(data);
   };
 
