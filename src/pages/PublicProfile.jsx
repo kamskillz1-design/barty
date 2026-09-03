@@ -129,9 +129,12 @@ export default function PublicProfile() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
+                  <span className={`mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold text-white ${(l.type || 'have') === 'want' ? 'bg-emerald-500' : 'bg-indigo-600'}`}>
+                    {(l.type || 'have') === 'want' ? t.listing.want : t.listing.have}
+                  </span>
                   <p className="truncate text-sm font-semibold text-slate-900">{l.title}</p>
                   <p className="text-xs text-slate-400">{l.have_category ? categoryLabel(t, l.have_category) : ''}{l.have_subcategory ? ` · ${subcatLabel(t, l.have_subcategory)}` : ''}</p>
-                  <p className="mt-0.5 text-xs text-slate-400 flex items-center gap-1"><MapPin className="h-3 w-3" />{l.city || l.country || '—'}</p>
+                  <p className="mt-0.5 text-xs text-slate-400 flex items-center gap-1"><MapPin className="h-3 w-3" />{l.neighborhood || l.city || l.region || l.country || '—'}</p>
                 </div>
               </Link>
             ))}

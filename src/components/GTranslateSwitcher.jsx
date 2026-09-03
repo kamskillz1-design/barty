@@ -16,13 +16,13 @@ const readGoogTrans = () => {
   } catch { return ''; }
 };
 
-const SOURCE = 'en';
+const SOURCE = 'es';
 
 export default function GTranslateSwitcher() {
   const [open, setOpen] = useState(false);
   const [switching, setSwitching] = useState(false);
   const [current, setCurrent] = useState(() => readGoogTrans() || SOURCE);
-  const currentLabel = LANGUAGES.find((l) => l.code === current)?.label || 'English';
+  const currentLabel = LANGUAGES.find((l) => l.code === current)?.label || 'Español';
 
   const select = (code) => {
     if (switching) return;
@@ -38,12 +38,12 @@ export default function GTranslateSwitcher() {
     }
     // Non-English: persist the choice and translate the current DOM in place via
     // GTranslate's engine (no reload → fast, no stale-restore issue).
-    document.cookie = `googtrans=/en/${code};path=/`;
+    document.cookie = `googtrans=/es/${code};path=/`;
     setSwitching(true);
     let tries = 0;
     const go = () => {
       if (typeof window.doGTranslate === 'function') {
-        try { window.doGTranslate('en|' + code); } catch { /* ignore */ }
+        try { window.doGTranslate('es|' + code); } catch { /* ignore */ }
         setCurrent(code);
         setSwitching(false);
       } else if (tries++ < 40) {

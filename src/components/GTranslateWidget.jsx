@@ -11,7 +11,7 @@ export default function GTranslateWidget() {
     if (injected) return;
     injected = true;
     window.gtranslateSettings = {
-      default_language: 'en',
+      default_language: 'es',
       native_language_names: true,
       wrapper_selector: '.gtranslate_engine',
       switcher_horizontal_position: 'inline'
@@ -26,7 +26,7 @@ export default function GTranslateWidget() {
     const onClick = (e) => {
       let el = e.target;
       while (el && el !== document.body) {
-        if (el.dataset && el.dataset.gtLang === 'en') {
+        if (el.dataset && el.dataset.gtLang === 'es') {
           document.cookie = 'googtrans=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
           document.cookie = 'googtrans=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=' + window.location.hostname;
           window.location.reload();

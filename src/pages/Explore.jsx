@@ -24,6 +24,7 @@ export default function Explore() {
   const [q, setQ] = useState('');
   const [exchType, setExchType] = useState('');
   const [category, setCategory] = useState('');
+  const [listingType, setListingType] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [townFilter, setTownFilter] = useState('');
   const [ownerNames, setOwnerNames] = useState({});
@@ -86,6 +87,7 @@ export default function Explore() {
       const isOnline = l.exchange_location === 'online';
       if (category && l.have_category !== category) return false;
       if (exchType && l.have_exchange_type !== exchType) return false;
+      if (listingType && (l.type || 'have') !== listingType) return false;
       // Online listings bypass the local-area filters so they remain available as
       // fallback even when a city/country has been auto-detected.
       if (!isOnline) {
@@ -104,7 +106,7 @@ export default function Explore() {
       return 3;
     };
     return [...base].sort((a, b) => rank(a) - rank(b));
-  }, [listings, q, category, exchType, countryFilter, townFilter]);
+  }, [listings, q, category, exchType, listingType, countryFilter, townFilter]);
 
   return (
     <div className="space-y-7">
@@ -156,6 +158,11 @@ export default function Explore() {
           <select value={exchType} onChange={(e) => { setExchType(e.target.value); setCategory(''); }} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
             <option value="">{t.listing.exchangeType}: {t.search.allTypes}</option>
             {EXCHANGE_TYPES.map((x) => <option key={x.id} value={x.id}>{x.icon} {t.exchType[x.id]}</option>)}
+          </select>
+          <select value={listingType} onChange={(e) => setListingType(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
+            <option value="">{t.search.listingType}: {t.search.allListingTypes}</option>
+            <option value="have">{t.listing.have}</option>
+            <option value="want">{t.listing.want}</option>
           </select>
           <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
             <option value="">{t.search.allCategories}</option>

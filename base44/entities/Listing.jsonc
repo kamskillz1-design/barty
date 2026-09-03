@@ -10,6 +10,15 @@
       "type": "string",
       "description": "Detailed description of what is offered"
     },
+    "type": {
+      "type": "string",
+      "enum": [
+        "have",
+        "want"
+      ],
+      "default": "have",
+      "description": "Primary listing intent: 'have' = the owner is offering/providing, 'want' = the owner is requesting/seeking. Color-coded across the UI (Indigo for have, Mint for want)."
+    },
     "have_exchange_type": {
       "type": "string",
       "enum": [
@@ -78,6 +87,10 @@
       "type": "string",
       "description": "Country where the listing owner is based"
     },
+    "region": {
+      "type": "string",
+      "description": "State / Region / Province \u2014 second level of the location hierarchy (Country -> Region -> City -> Neighborhood)"
+    },
     "city": {
       "type": "string",
       "description": "City or town"
@@ -85,6 +98,10 @@
     "town": {
       "type": "string",
       "description": "Village or local area"
+    },
+    "neighborhood": {
+      "type": "string",
+      "description": "Neighborhood / Zone \u2014 finest level of the location hierarchy"
     },
     "language": {
       "type": "string",
