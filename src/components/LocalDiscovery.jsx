@@ -2,26 +2,22 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
-import { useLocation } from '@/lib/LocationContext';
-import BarterCard from '@/components/BarterCard';
+import ListingCard from '@/components/ListingCard';
 import { MapPin, ArrowRight } from 'lucide-react';
 
 /**
- * Auto local discovery: surfaces listings near the active area. The active area
- * comes from the shared LocationContext (single source of truth) — so a manual
- * picker override (e.g. Madrid) replaces the detected/profile area instantly.
- * Falls back to the signed-in user's profile city/country only when no active
- * area has been resolved yet.
+ * Auto local discovery: surfaces listings in the signed-in user's own
+ * city (falling back to country) right below the main search area. Users
+ * with no saved location see nothing here and rely on the global search.
  */
 export default function LocalDiscovery({ listings }) {
   const { t } = useI18n();
   const { user } = useAuth();
-  const { activeArea } = useLocation();
-
-  const city = (activeArea?.city || user?.city || '').trim().toLowerCase();
-  const country = (activeArea?.country || user?.country || '').trim().toLowerCase();
 
   const local = useMemo(() => {
+    if (!user) return [];
+    const city = (user.city || '').trim().toLowerCase();
+    const country = (user.country || '').trim().toLowerCase();
     if (!city && !country) return [];
     return listings.filter((l) => {
       if (l.status === 'traded') return false;
@@ -29,10 +25,10 @@ export default function LocalDiscovery({ listings }) {
       if (country && (l.country || '').toLowerCase() === country) return true;
       return false;
     }).slice(0, 6);
-  }, [listings, city, country]);
+  }, [listings, user]);
 
-  if (!city && !country) return null;
-  const area = activeArea?.city || activeArea?.country || user?.city || user?.country;
+  if (!user || (!user.city && !user.country)) return null;
+  const area = user.city || user.country;
 
   return (
     <section>
@@ -49,7 +45,7 @@ export default function LocalDiscovery({ listings }) {
         <p className="rounded-2xl border border-dashed border-slate-300 bg-white py-10 text-center text-sm text-slate-400">{t.local.empty}</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {local.map((l) => <BarterCard key={l.id} listing={l} />)}
+          {local.map((l) => <ListingCard key={l.id} listing={l} />)}
         </div>
       )}
     </section>

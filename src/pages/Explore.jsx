@@ -3,27 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
-import { useLocation } from '@/lib/LocationContext';
-import LocationService from '@/lib/locationService';
 import BarterCard from '@/components/BarterCard';
 import SafetyBanner from '@/components/SafetyBanner';
-import LocationPicker from '@/components/LocationPicker';
+import SearchableSelect from '@/components/SearchableSelect';
+import { COUNTRIES } from '@/lib/geoData';
 import { Search, Plus, Package, Scale, Globe2, Sparkles, SlidersHorizontal } from 'lucide-react';
 import GlobalImpactCounter from '@/components/GlobalImpactCounter';
 import LocalDiscovery from '@/components/LocalDiscovery';
 import { EXCHANGE_TYPES, categoriesForType, CATEGORY_TREE, OTHER_KEY } from '@/lib/categories';
+import { getUserLocation, reverseGeocode } from '@/lib/geocode';
+
+const SESSION_KEY = 'ibarti_explore_loc';
 
 export default function Explore() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { activeArea } = useLocation();
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [exchType, setExchType] = useState('');
   const [category, setCategory] = useState('');
-  const [listingType, setListingType] = useState('');
+  const [countryFilter, setCountryFilter] = useState('');
+  const [townFilter, setTownFilter] = useState('');
   const [ownerNames, setOwnerNames] = useState({});
 
   useEffect(() => {
@@ -45,61 +47,64 @@ export default function Explore() {
         if (ids.length) {
           try {
             const res = await base44.functions.invoke('resolveUserNames', { ids });
-            setOwnerNames(res?.data?.names || res?.names || {});
+            const names = res?.data?.names || res?.names || {};
+            setOwnerNames(names);
           } catch { /* keep generic fallback labels */ }
         }
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
 
-  // Location is owned by the shared LocationContext (single source of truth).
-  // The initial auto-detection happens there; a manual picker change updates it
-  // and this memo re-filters/re-ranks immediately.
-  const countryFilter = activeArea?.country || '';
-  const townFilter = activeArea?.city || '';
-  const userLat = activeArea?.latitude;
-  const userLng = activeArea?.longitude;
+    // Auto-detect location once per session and pre-fill filters.
+    (async () => {
+      let loc = null;
+      try { loc = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch { /* ignore */ }
+      if (!loc) {
+        const coords = await getUserLocation();
+        if (coords) {
+          const rev = await reverseGeocode(coords[0], coords[1]);
+          if (rev && (rev.country || rev.city)) {
+            loc = rev;
+            try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(loc)); } catch { /* ignore */ }
+          }
+        }
+      }
+      if (loc) {
+        if (loc.country) setCountryFilter(loc.country);
+        if (loc.city) setTownFilter(loc.city);
+      }
+    })();
+  }, []);
 
   const filtered = useMemo(() => {
     const ql = q.trim().toLowerCase();
     const tl = townFilter.trim().toLowerCase();
-    const cf = countryFilter.trim().toLowerCase();
     const base = listings.filter((l) => {
       if (l.status === 'traded') return false;
       if (ql && !(`${l.title || ''} ${l.description || ''} ${(l.tags || []).join(' ')}`.toLowerCase().includes(ql))) return false;
       const isOnline = l.exchange_location === 'online';
       if (category && l.have_category !== category) return false;
       if (exchType && l.have_exchange_type !== exchType) return false;
-      if (listingType && (l.type || 'have') !== listingType) return false;
       // Online listings bypass the local-area filters so they remain available as
-      // fallback even when a city/country has been selected.
+      // fallback even when a city/country has been auto-detected.
       if (!isOnline) {
-        if (cf && (l.country || '').toLowerCase() !== cf) return false;
+        if (countryFilter && (l.country || '').toLowerCase() !== countryFilter.toLowerCase()) return false;
         if (tl && !(`${l.town || ''} ${l.city || ''}`).toLowerCase().includes(tl)) return false;
       }
       return true;
     });
-    // Order: same-city matches first, then same-country, then online, then the rest.
-    // Within each bucket, sort by Haversine distance when both the user and the
-    // listing have coordinates (nearest first); falls back to created order otherwise.
+    // Order: city matches first, then same-country, then online listings, then the rest.
+    const cl = tl;
+    const cf = countryFilter.trim().toLowerCase();
     const rank = (l) => {
-      if (tl && (`${l.town || ''} ${l.city || ''}`).toLowerCase().includes(tl)) return 0;
+      if (cl && (`${l.town || ''} ${l.city || ''}`).toLowerCase().includes(cl)) return 0;
       if (cf && (l.country || '').toLowerCase() === cf) return 1;
       if (l.exchange_location === 'online') return 2;
       return 3;
     };
-    const dist = (l) => {
-      if (userLat == null || userLng == null || l.lat == null || l.lng == null) return Infinity;
-      return LocationService.distanceBetween(userLat, userLng, l.lat, l.lng);
-    };
-    return [...base].sort((a, b) => {
-      const ra = rank(a), rb = rank(b);
-      if (ra !== rb) return ra - rb;
-      return dist(a) - dist(b);
-    });
-  }, [listings, q, category, exchType, listingType, countryFilter, townFilter, userLat, userLng]);
+    return [...base].sort((a, b) => rank(a) - rank(b));
+  }, [listings, q, category, exchType, countryFilter, townFilter]);
 
   return (
     <div className="space-y-7">
@@ -132,10 +137,7 @@ export default function Explore() {
 
       <SafetyBanner />
 
-      {/* Location-aware area picker — single source of truth for the active area */}
-      <LocationPicker />
-
-      {/* Filters (search + category facets; location lives in the picker above) */}
+      {/* Filters */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
         <div className="flex items-center gap-2 text-slate-700">
           <SlidersHorizontal className="h-4 w-4 text-sky-600" />
@@ -150,26 +152,23 @@ export default function Explore() {
             className="w-full rounded-xl border border-slate-200 bg-slate-50 ps-9 pe-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white"
           />
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           <select value={exchType} onChange={(e) => { setExchType(e.target.value); setCategory(''); }} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
             <option value="">{t.listing.exchangeType}: {t.search.allTypes}</option>
             {EXCHANGE_TYPES.map((x) => <option key={x.id} value={x.id}>{x.icon} {t.exchType[x.id]}</option>)}
-          </select>
-          <select value={listingType} onChange={(e) => setListingType(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
-            <option value="">{t.search.listingType}: {t.search.allListingTypes}</option>
-            <option value="have">{t.listing.have}</option>
-            <option value="want">{t.listing.want}</option>
           </select>
           <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400">
             <option value="">{t.search.allCategories}</option>
             {(exchType ? categoriesForType(exchType) : CATEGORY_TREE).map((c) => <option key={c.id} value={c.id}>{t.v1cat[c.id]}</option>)}
             <option value={OTHER_KEY}>{t.listing.otherCategory}</option>
           </select>
+          <SearchableSelect options={COUNTRIES} value={countryFilter} onChange={setCountryFilter} allLabel={t.search.allLocations} placeholder={t.search.allLocations} />
+          <input value={townFilter} onChange={(e) => setTownFilter(e.target.value)} placeholder={t.search.anyTown} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400 focus:bg-white" />
         </div>
       </div>
 
       {/* Local discovery */}
-      <LocalDiscovery listings={listings} />
+      <LocalDiscovery listings={listings} user={user} />
 
       {/* Grid */}
       {loading ? (

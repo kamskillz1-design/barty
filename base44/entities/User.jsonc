@@ -33,21 +33,6 @@
     "bio": {
       "type": "string",
       "description": "Short profile bio"
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "active",
-        "suspended",
-        "banned"
-      ],
-      "default": "active",
-      "description": "Account moderation status. 'suspended' = temporary (auto-restores at suspended_until), 'banned' = permanent."
-    },
-    "suspended_until": {
-      "type": "string",
-      "format": "date-time",
-      "description": "When a temporary suspension ends. Cleared on restore."
     }
   },
   "required": [

@@ -8,7 +8,6 @@ import ValueMatchIndicator from '@/components/ValueMatchIndicator';
 import SafeSpotSelector from '@/components/SafeSpotSelector';
 import { useToast } from '@/components/ui/use-toast';
 import { ArrowLeft, Send, Check, X, Star, ShieldX } from 'lucide-react';
-import { useCanAct } from '@/hooks/useSuspension';
 
 const STATUS_STYLE = {
   pending: 'bg-amber-50 text-amber-700',
@@ -36,7 +35,6 @@ export default function TradeDetail() {
   const [otherUser, setOtherUser] = useState(null);
   const { toast } = useToast();
   const bottomRef = useRef(null);
-  const assertCanAct = useCanAct();
 
   const otherUserId = trade ? (trade.proposer_id === user?.id ? trade.receiver_id : trade.proposer_id) : null;
   const [blockByMe, setBlockByMe] = useState(false);
@@ -108,7 +106,6 @@ export default function TradeDetail() {
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!text.trim()) return;
-    if (!(await assertCanAct())) return;
     setSending(true);
     try {
       await base44.entities.Message.create({ trade_id: id, sender_id: user.id, text: text.trim() });

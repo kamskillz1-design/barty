@@ -30,7 +30,6 @@ export default function GTranslateSwitcher() {
     if (code === current) return;
     if (code === SOURCE) {
       setSwitching(true);
-      try { localStorage.setItem('barti_gt_chosen', 'yes'); } catch { /* storage blocked */ }
       // Clear the cookie (expire in the past on every path variant GTranslate may use), then reload.
       document.cookie = 'googtrans=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
       document.cookie = 'googtrans=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;domain=' + window.location.hostname;
@@ -40,7 +39,6 @@ export default function GTranslateSwitcher() {
     // Non-English: persist the choice and translate the current DOM in place via
     // GTranslate's engine (no reload → fast, no stale-restore issue).
     document.cookie = `googtrans=/en/${code};path=/`;
-    try { localStorage.setItem('barti_gt_chosen', 'yes'); } catch { /* storage blocked */ }
     setSwitching(true);
     let tries = 0;
     const go = () => {

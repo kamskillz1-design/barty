@@ -56,10 +56,7 @@ export default function MyListings() {
                 </div>
               </Link>
               <div className="p-4">
-                <span className={`mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold text-white ${(l.type || 'have') === 'want' ? 'bg-emerald-500' : 'bg-indigo-600'}`}>
-                  {(l.type || 'have') === 'want' ? t.listing.want : t.listing.have}
-                </span>
-                <Link to={`/listings/${l.id}`} className="block font-semibold text-slate-900 line-clamp-1">{l.title}</Link>
+                <Link to={`/listings/${l.id}`} className="font-semibold text-slate-900 line-clamp-1">{l.title}</Link>
                 <p className="mt-1 text-xs text-slate-400">{categoryLabel(t, l.have_category)}</p>
                 <div className="mt-3 flex items-center justify-between">
                   <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${l.status === 'available' ? 'bg-emerald-50 text-emerald-600' : l.status === 'reserved' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>

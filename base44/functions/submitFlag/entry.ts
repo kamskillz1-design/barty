@@ -1,7 +1,6 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.40';
-import { LISTING_HIDE_THRESHOLD } from '../../shared/moderation.ts';
 
-const HIDE_THRESHOLD = LISTING_HIDE_THRESHOLD;
+const HIDE_THRESHOLD = 3;
 
 export default async function(req) {
   try {

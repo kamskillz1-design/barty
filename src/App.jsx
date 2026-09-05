@@ -9,7 +9,6 @@ import ScrollToTop from './components/ScrollToTop';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Layout from '@/components/Layout';
 import { I18nProvider } from '@/lib/i18n';
-import { LocationProvider } from '@/lib/LocationContext';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
 import ForgotPassword from '@/pages/ForgotPassword';
@@ -23,8 +22,6 @@ import Trades from '@/pages/Trades';
 import TradeDetail from '@/pages/TradeDetail';
 import Profile from '@/pages/Profile';
 import PublicProfile from '@/pages/PublicProfile';
-import Admin from '@/pages/Admin';
-import AdminRoute from '@/components/AdminRoute';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -53,8 +50,7 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <I18nProvider>
-      <LocationProvider>
-        <Routes>
+      <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -75,12 +71,8 @@ const AuthenticatedApp = () => {
             <Route path="/profile" element={<Profile />} />
           </Route>
         </Route>
-        <Route element={<AdminRoute />}>
-          <Route path="/admin" element={<Admin />} />
-        </Route>
         <Route path="*" element={<PageNotFound />} />
-        </Routes>
-      </LocationProvider>
+      </Routes>
     </I18nProvider>
   );
 };

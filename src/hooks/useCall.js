@@ -129,11 +129,6 @@ export default function useCall({ tradeId, tradeParticipantIds, meId, otherUserI
   const startCall = async (m) => {
     if (!window.RTCPeerConnection || !navigator.mediaDevices?.getUserMedia) { onError?.('noWebrtc'); return; }
     if (statusRef.current !== 'idle') return;
-    try {
-      const r = await base44.functions.invoke('checkCanAct', {});
-      const d = r?.data || r || {};
-      if (d.blocked) { onError?.('suspended'); return; }
-    } catch { /* fail open */ }
     setStatusBoth('connecting');
     setMode(m); modeRef.current = m; setIsCaller(true); isCallerRef.current = true;
     callIdRef.current = crypto.randomUUID();

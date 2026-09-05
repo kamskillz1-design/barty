@@ -10,7 +10,6 @@ import CommentsSection from '@/components/comments/CommentsSection';
 import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X, Pencil, Globe, ShieldAlert } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
-import { useCanAct } from '@/hooks/useSuspension';
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -25,7 +24,6 @@ export default function ListingDetail() {
   const [selected, setSelected] = useState(null);
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
-  const assertCanAct = useCanAct();
 
   useEffect(() => {
     (async () => {
@@ -53,7 +51,6 @@ export default function ListingDetail() {
 
   const submitProposal = async () => {
     if (!selected) return;
-    if (!(await assertCanAct())) { setProposing(false); return; }
     setSending(true);
     try {
       const offered = myListings.find((m) => m.id === selected);
@@ -80,7 +77,7 @@ export default function ListingDetail() {
   if (loading) return <div className="py-20 text-center text-slate-400">{t.common.loading}</div>;
   if (!listing) return <div className="py-20 text-center text-slate-400">{t.common.empty}</div>;
 
-  const loc = [listing.neighborhood, listing.town, listing.city, listing.region, listing.country].filter(Boolean).join(', ');
+  const loc = [listing.town, listing.city, listing.country].filter(Boolean).join(', ');
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -116,9 +113,6 @@ export default function ListingDetail() {
         <div className="space-y-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-block rounded-full px-3 py-1 text-xs font-bold text-white ${(listing.type || 'have') === 'want' ? 'bg-emerald-500' : 'bg-indigo-600'}`}>
-                {(listing.type || 'have') === 'want' ? t.listing.want : t.listing.have}
-              </span>
               <span className="inline-block rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">
                 {(EXCHANGE_TYPES.find((x) => x.id === listing.have_exchange_type)?.icon || '📦')} {t.listing.haveLabel}
               </span>

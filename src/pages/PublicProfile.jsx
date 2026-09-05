@@ -7,7 +7,6 @@ import { Star, MapPin, Package, ShieldX, Unlock } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, categoryLabel, subcatLabel } from '@/lib/categories';
 import ReviewsList from '@/components/reviews/ReviewsList';
-import ReportUserButton from '@/components/ReportUserButton';
 
 export default function PublicProfile() {
   const { id } = useParams();
@@ -86,18 +85,15 @@ export default function PublicProfile() {
             )}
           </div>
           {viewer?.id && viewer.id !== id && (
-            <div className="flex items-center gap-2">
-              <ReportUserButton userId={id} />
-              {blockByMe ? (
-                <button onClick={unblockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
-                  <Unlock className="h-3.5 w-3.5" /> {t.call.unblock}
-                </button>
-              ) : (
-                <button onClick={blockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
-                  <ShieldX className="h-3.5 w-3.5" /> {t.call.blockUser}
-                </button>
-              )}
-            </div>
+            blockByMe ? (
+              <button onClick={unblockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                <Unlock className="h-3.5 w-3.5" /> {t.call.unblock}
+              </button>
+            ) : (
+              <button onClick={blockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
+                <ShieldX className="h-3.5 w-3.5" /> {t.call.blockUser}
+              </button>
+            )
           )}
         </div>
         {user.bio && <p className="mt-4 text-sm text-slate-600 leading-relaxed whitespace-pre-line">{user.bio}</p>}
@@ -133,12 +129,9 @@ export default function PublicProfile() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <span className={`mb-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold text-white ${(l.type || 'have') === 'want' ? 'bg-emerald-500' : 'bg-indigo-600'}`}>
-                    {(l.type || 'have') === 'want' ? t.listing.want : t.listing.have}
-                  </span>
                   <p className="truncate text-sm font-semibold text-slate-900">{l.title}</p>
                   <p className="text-xs text-slate-400">{l.have_category ? categoryLabel(t, l.have_category) : ''}{l.have_subcategory ? ` · ${subcatLabel(t, l.have_subcategory)}` : ''}</p>
-                  <p className="mt-0.5 text-xs text-slate-400 flex items-center gap-1"><MapPin className="h-3 w-3" />{l.neighborhood || l.city || l.region || l.country || '—'}</p>
+                  <p className="mt-0.5 text-xs text-slate-400 flex items-center gap-1"><MapPin className="h-3 w-3" />{l.city || l.country || '—'}</p>
                 </div>
               </Link>
             ))}

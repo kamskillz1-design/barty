@@ -10,24 +10,6 @@ export default function GTranslateWidget() {
   useEffect(() => {
     if (injected) return;
     injected = true;
-
-    // English is the GTranslate source language (so user-written English listing
-    // text gets translated into the page language). Default first-time visitors
-    // to a Spanish *display* while keeping that English source, and migrate any
-    // stale googtrans cookie left by a previous source-language setup. Once a
-    // user explicitly picks a language we remember that and stop auto-defaulting.
-    try {
-      const m = document.cookie.match(/(?:^|;)\s*googtrans=([^;]+)/);
-      const chosen = localStorage.getItem('barti_gt_chosen');
-      if (m) {
-        if (!decodeURIComponent(m[1]).startsWith('/en/')) {
-          document.cookie = 'googtrans=/en/es;path=/';
-        }
-      } else if (chosen !== 'yes') {
-        document.cookie = 'googtrans=/en/es;path=/';
-      }
-    } catch { /* storage blocked */ }
-
     window.gtranslateSettings = {
       default_language: 'en',
       native_language_names: true,

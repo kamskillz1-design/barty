@@ -23,9 +23,8 @@ export default function BarterCard({ listing, ownerName }) {
   const haveLine = [haveCat, subcatLabel(t, listing.have_subcategory)].filter(Boolean).join(' · ');
   const wantLine = [wantCat, subcatLabel(t, listing.want_subcategory)].filter(Boolean).join(' · ');
 
-  const loc = [listing.neighborhood, listing.city, listing.region, listing.country].filter(Boolean).join(', ');
+  const loc = [listing.city, listing.country].filter(Boolean).join(', ');
   const exchLoc = listing.exchange_location ? t.exchLoc[listing.exchange_location] : '';
-  const ltype = listing.type || 'have';
 
   const haveIcon = haveType ? haveType.icon : '📦';
 
@@ -43,9 +42,6 @@ export default function BarterCard({ listing, ownerName }) {
           <p className="truncate text-sm font-medium text-slate-700 notranslate" translate="no">{ownerName || t.common.member}</p>
           <p className="text-xs text-slate-400">{listing.created_date ? moment(listing.created_date).fromNow() : ''}</p>
         </div>
-        <span className={`flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold text-white ${ltype === 'want' ? 'bg-emerald-500' : 'bg-indigo-600'}`}>
-          {ltype === 'want' ? t.listing.want : t.listing.have}
-        </span>
         {exchLoc && (
           <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
             <Globe className="h-3 w-3" /> {exchLoc}

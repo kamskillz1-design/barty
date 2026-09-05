@@ -6,8 +6,6 @@ import { COUNTRIES } from '@/lib/geoData';
 import { EXCHANGE_TYPES, categoriesForType, getCategory, EXCHANGE_LOCATIONS, subcatKey, OTHER_KEY } from '@/lib/categories';
 import { ImagePlus, X, Save, ArrowLeftRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { useCanAct } from '@/hooks/useSuspension';
-import { geocode } from '@/lib/geocode';
 
 /**
  * Reusable listing form (I Have / I Want architecture) used by CreateListing
@@ -21,11 +19,9 @@ import { geocode } from '@/lib/geocode';
 export default function ListingForm({ initialValues, onSubmit, saving, submitLabel }) {
   const { t } = useI18n();
   const { user } = useAuth();
-  const assertCanAct = useCanAct();
 
   const [form, setForm] = useState(() => ({
     title: '', description: '',
-    type: 'have',
     have_exchange_type: '',
     have_category: '',
     have_subcategory: '',
@@ -37,7 +33,7 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
     is_open_to_anything: false,
     exchange_location: 'local',
     tags: [],
-    country: user?.country || '', region: '', city: user?.city || '', town: '', neighborhood: '',
+    country: user?.country || '', city: user?.city || '', town: '',
     baseline_value: 50,
     ...initialValues
   }));
@@ -97,15 +93,6 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
       want_title: form.is_open_to_anything ? '' : form.want_title,
       want_description: form.is_open_to_anything ? '' : form.want_description
     };
-    if (!(await assertCanAct())) return;
-    // Best-effort geocode the listing's location to coordinates so Explore can
-    // rank it by distance. Non-blocking: a failed lookup just saves without lat/lng.
-    if (!data.lat && !data.lng) {
-      const q = [data.city, data.town, data.country].filter(Boolean).join(', ');
-      if (q) {
-        try { const c = await geocode(q); if (c) { data.lat = c.lat; data.lng = c.lng; } } catch { /* best-effort */ }
-      }
-    }
     await onSubmit(data);
   };
 
@@ -182,19 +169,6 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
 
   return (
     <form onSubmit={submit} className="mt-5 space-y-5">
-      {/* Listing type: HAVE / WANT */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
-        <label className="mb-2 block text-sm font-medium text-slate-700">{t.listing.listingType}</label>
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={() => set('type', 'have')} className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition ${(form.type || 'have') === 'have' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
-            <span className="h-2.5 w-2.5 rounded-full bg-indigo-600" /> {t.listing.have}
-          </button>
-          <button type="button" onClick={() => set('type', 'want')} className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition ${form.type === 'want' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'}`}>
-            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" /> {t.listing.want}
-          </button>
-        </div>
-      </section>
-
       {/* I HAVE section */}
       <section className="rounded-2xl border border-sky-200 bg-sky-50/40 p-5">
         <div className="flex items-center gap-2">
@@ -285,20 +259,12 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
             <SearchableSelect options={COUNTRIES} value={form.country} onChange={(v) => set('country', v)} placeholder={t.listing.country} />
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.region}</label>
-            <input value={form.region} onChange={(e) => set('region', e.target.value)} className={inputCls} />
-          </div>
-          <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.city}</label>
             <input value={form.city} onChange={(e) => set('city', e.target.value)} className={inputCls} />
           </div>
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.town}</label>
             <input value={form.town} onChange={(e) => set('town', e.target.value)} className={inputCls} />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.neighborhood}</label>
-            <input value={form.neighborhood} onChange={(e) => set('neighborhood', e.target.value)} className={inputCls} />
           </div>
         </div>
 
