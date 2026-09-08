@@ -3,6 +3,7 @@ import { ArrowLeftRight, Check, MessageSquare } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
+import { notifyTradeEvent } from '@/lib/tradeNotifications';
 
 /**
  * CounterOffer — the receiver of a pending trade can counter by offering a
@@ -49,7 +50,7 @@ export default function CounterOffer({ trade, onDone }) {
         text: `Counter-offer: ${sel.title}`
       });
       // Notify the proposer by email (non-blocking for the UI).
-      base44.functions.invoke('sendTradeNotification', { trade_id: trade.id, kind: 'counter' }).catch(() => {});
+      notifyTradeEvent(trade.id, 'counter');
       setOpen(false);
       setSelected(null);
       setMessage('');

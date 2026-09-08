@@ -12,6 +12,9 @@ import OwnerBadges from '@/components/UserBadges';
 import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X, Pencil, Globe, ShieldAlert } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
+import { isListingStale } from '@/lib/listingFreshness';
+import { notifyTradeEvent } from '@/lib/tradeNotifications';
+import { resolveUsers, buildUserMeta } from '@/lib/userMeta';
 
 export default function ListingDetail() {
   const { id } = useParams();
@@ -36,12 +39,9 @@ export default function ListingDetail() {
         setListing(l);
         if (l.offering_user_id) {
           try {
-            const res = await base44.functions.invoke('resolveUserNames', { ids: [l.offering_user_id] });
-            const names = res?.data?.names || res?.names || {};
-            const reviewCounts = res?.data?.reviewCounts || res?.reviewCounts || {};
-            const verifiedIds = res?.data?.verified || res?.verified || [];
+            const { names, reviewCounts, verifiedIds } = await resolveUsers([l.offering_user_id]);
             setOwner({ full_name: names[l.offering_user_id] || 'User' });
-            setOwnerMeta({ reviewCount: reviewCounts[l.offering_user_id] ?? 0, verified: verifiedIds.includes(l.offering_user_id) });
+            setOwnerMeta(buildUserMeta([l.offering_user_id], { reviewCounts, verifiedIds })[l.offering_user_id]);
           } catch {}
         }
         if (user) {
@@ -75,7 +75,7 @@ export default function ListingDetail() {
         receiver_completed: false
       });
       // Email the owner about the new proposal (non-blocking).
-      base44.functions.invoke('sendTradeNotification', { trade_id: tr.id, kind: 'proposal' }).catch(() => {});
+      notifyTradeEvent(tr.id, 'proposal');
       setSuccess(true);
       setProposing(false);
     } finally {
@@ -95,8 +95,7 @@ export default function ListingDetail() {
       setStillConfirmed(true);
     } catch { /* try again later */ }
   };
-  const lastConfirmed = listing.last_confirmed_date ? new Date(listing.last_confirmed_date).getTime() : 0;
-  const isStale = isOwner && (!lastConfirmed || Date.now() - lastConfirmed > 60 * 24 * 60 * 60 * 1000);
+  const isStale = isOwner && isListingStale(listing);
 
   const loc = [listing.town, listing.city, listing.country].filter(Boolean).join(', ');
 

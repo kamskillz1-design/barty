@@ -13,11 +13,11 @@ import LocalDiscovery from '@/components/LocalDiscovery';
 import SuggestedForYou from '@/components/explore/SuggestedForYou';
 import Leaderboard from '@/components/explore/Leaderboard';
 import OnboardingChecklist from '@/components/explore/OnboardingChecklist';
-import { approxDistanceKm } from '@/lib/matching';
 import { EXCHANGE_TYPES, categoriesForType, CATEGORY_TREE, OTHER_KEY } from '@/lib/categories';
-import { getUserLocation, reverseGeocode } from '@/lib/geocode';
-
-const SESSION_KEY = 'ibarti_explore_loc';
+import { filterAndRankListings } from '@/lib/exploreRanking';
+import { resolveUsers, buildUserMeta } from '@/lib/userMeta';
+import { getBlockerIds } from '@/lib/userBlocks';
+import useDetectedLocation from '@/hooks/useDetectedLocation';
 
 export default function Explore() {
   const { t } = useI18n();
@@ -28,11 +28,9 @@ export default function Explore() {
   const [q, setQ] = useState('');
   const [exchType, setExchType] = useState('');
   const [category, setCategory] = useState('');
-  const [countryFilter, setCountryFilter] = useState('');
-  const [townFilter, setTownFilter] = useState('');
+  const { country: countryFilter, setCountry: setCountryFilter, town: townFilter, setTown: setTownFilter, coords: myCoords } = useDetectedLocation();
   const [ownerNames, setOwnerNames] = useState({});
   const [ownerMeta, setOwnerMeta] = useState({});
-  const [myCoords, setMyCoords] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -43,8 +41,7 @@ export default function Explore() {
         // Hide listings from owners who blocked the current viewer (one-directional).
         if (user?.id) {
           try {
-            const bl = await base44.entities.UserBlock.filter({ blocked_id: user.id, active: true });
-            const blockedOwners = new Set((bl || []).map((b) => b.blocker_id).filter(Boolean));
+            const blockedOwners = await getBlockerIds(user.id);
             if (blockedOwners.size) visible = visible.filter((l) => !blockedOwners.has(l.offering_user_id));
           } catch { /* ignore */ }
         }
@@ -52,83 +49,21 @@ export default function Explore() {
         const ids = [...new Set(visible.map((l) => l.offering_user_id).filter(Boolean))];
         if (ids.length) {
           try {
-            const res = await base44.functions.invoke('resolveUserNames', { ids });
-            const names = res?.data?.names || res?.names || {};
-            const reviewCounts = res?.data?.reviewCounts || res?.reviewCounts || {};
-            const verifiedIds = res?.data?.verified || res?.verified || [];
+            const { names, reviewCounts, verifiedIds } = await resolveUsers(ids);
             setOwnerNames(names);
-            const meta = {};
-            ids.forEach((uid) => { meta[uid] = { reviewCount: reviewCounts[uid] ?? 0, verified: verifiedIds.includes(uid) }; });
-            setOwnerMeta(meta);
+            setOwnerMeta(buildUserMeta(ids, { reviewCounts, verifiedIds }));
           } catch { /* keep generic fallback labels */ }
         }
       } finally {
         setLoading(false);
       }
     })();
-
-    // Auto-detect location once per session and pre-fill filters.
-    (async () => {
-      let loc = null;
-      try { loc = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch { /* ignore */ }
-      if (!loc) {
-        const coords = await getUserLocation();
-        if (coords) {
-          const rev = await reverseGeocode(coords[0], coords[1]);
-          if (rev && (rev.country || rev.city)) {
-            loc = { ...rev, lat: coords[0], lng: coords[1] };
-            try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(loc)); } catch { /* ignore */ }
-          }
-        }
-      }
-      if (loc) {
-        if (loc.country) setCountryFilter(loc.country);
-        if (loc.city) setTownFilter(loc.city);
-        if (typeof loc.lat === 'number' && typeof loc.lng === 'number') setMyCoords([loc.lat, loc.lng]);
-      }
-    })();
   }, []);
 
-  const filtered = useMemo(() => {
-    const ql = q.trim().toLowerCase();
-    const tl = townFilter.trim().toLowerCase();
-    const base = listings.filter((l) => {
-      if (l.status === 'traded') return false;
-      if (ql && !(`${l.title || ''} ${l.description || ''} ${(l.tags || []).join(' ')}`.toLowerCase().includes(ql))) return false;
-      const isOnline = l.exchange_location === 'online';
-      if (category && l.have_category !== category) return false;
-      if (exchType && l.have_exchange_type !== exchType) return false;
-      // Online listings bypass the local-area filters so they remain available as
-      // fallback even when a city/country has been auto-detected.
-      if (!isOnline) {
-        if (countryFilter && (l.country || '').toLowerCase() !== countryFilter.toLowerCase()) return false;
-        if (tl && !(`${l.town || ''} ${l.city || ''}`).toLowerCase().includes(tl)) return false;
-      }
-      return true;
-    });
-    // Order: city matches first, then same-country, then online listings, then the rest.
-    // Within a tier, nearest first when coordinates are known; listings whose
-    // owner hasn't confirmed them in ~60 days are demoted to the bottom.
-    const cl = tl;
-    const cf = countryFilter.trim().toLowerCase();
-    const STALE_MS = 60 * 24 * 60 * 60 * 1000;
-    const isStale = (l) => {
-      const c = l.last_confirmed_date ? new Date(l.last_confirmed_date).getTime() : 0;
-      return !c || Date.now() - c > STALE_MS;
-    };
-    const dist = (l) => (myCoords && typeof l.lat === 'number' && typeof l.lng === 'number')
-      ? approxDistanceKm(myCoords[0], myCoords[1], l.lat, l.lng)
-      : Infinity;
-    const rank = (l) => {
-      let r;
-      if (cl && (`${l.town || ''} ${l.city || ''}`).toLowerCase().includes(cl)) r = 0;
-      else if (cf && (l.country || '').toLowerCase() === cf) r = 1;
-      else if (l.exchange_location === 'online') r = 2;
-      else r = 3;
-      return isStale(l) ? r + 4 : r;
-    };
-    return [...base].sort((a, b) => (rank(a) - rank(b)) || (dist(a) - dist(b)));
-  }, [listings, q, category, exchType, countryFilter, townFilter, myCoords]);
+  const filtered = useMemo(
+    () => filterAndRankListings(listings, { q, category, exchType, countryFilter, townFilter, myCoords }),
+    [listings, q, category, exchType, countryFilter, townFilter, myCoords]
+  );
 
   return (
     <div className="space-y-7">

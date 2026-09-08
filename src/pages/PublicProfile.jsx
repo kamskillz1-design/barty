@@ -9,6 +9,7 @@ import { EXCHANGE_TYPES, categoryLabel, subcatLabel } from '@/lib/categories';
 import ReviewsList from '@/components/reviews/ReviewsList';
 import ReportUserButton from '@/components/report/ReportUserButton';
 import { VerifiedBadge } from '@/components/UserBadges';
+import { getBlockState, blockUser as blockUserOp, unblockUser as unblockUserOp } from '@/lib/userBlocks';
 
 export default function PublicProfile() {
   const { id } = useParams();
@@ -41,10 +42,9 @@ export default function PublicProfile() {
         } catch { /* verification unknown — hide badge */ }
         if (viewer?.id && viewer.id !== id) {
           try {
-            const theirs = await base44.entities.UserBlock.filter({ blocked_id: viewer.id, active: true });
-            setBlockByOther((theirs || []).some((b) => b.blocker_id === id));
-            const mine = await base44.entities.UserBlock.filter({ blocked_id: id, active: true });
-            setBlockByMe((mine || []).some((b) => b.blocker_id === viewer.id));
+            const state = await getBlockState(viewer.id, id);
+            setBlockByMe(state.blockByMe);
+            setBlockByOther(state.blockByOther);
           } catch { /* ignore */ }
         }
       } finally {
@@ -58,16 +58,12 @@ export default function PublicProfile() {
   const initial = (user?.full_name || '?').charAt(0).toUpperCase();
 
   const blockUser = async () => {
-    try { await base44.entities.UserBlock.create({ blocker_id: viewer.id, blocked_id: id, active: true }); setBlockByMe(true); }
+    try { await blockUserOp(viewer.id, id); setBlockByMe(true); }
     catch { /* already blocked */ }
   };
   const unblockUser = async () => {
-    try {
-      const mine = await base44.entities.UserBlock.filter({ blocked_id: id, active: true });
-      const rec = (mine || []).find((b) => b.blocker_id === viewer.id);
-      if (rec) await base44.entities.UserBlock.update(rec.id, { active: false, unblocked_date: new Date().toISOString() });
-      setBlockByMe(false);
-    } catch { /* ignore */ }
+    try { await unblockUserOp(viewer.id, id); setBlockByMe(false); }
+    catch { /* ignore */ }
   };
 
   if (loading) return <div className="py-20 text-center text-slate-400">{t.common.loading}</div>;

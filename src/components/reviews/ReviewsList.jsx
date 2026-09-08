@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import AggregateRating from '@/components/reviews/AggregateRating';
 import ReviewCard from '@/components/reviews/ReviewCard';
+import { resolveUsers } from '@/lib/userMeta';
 
 export default function ReviewsList({ userId }) {
   const { t } = useI18n();
@@ -20,8 +21,7 @@ export default function ReviewsList({ userId }) {
         const map = {};
         if (ids.length) {
           try {
-            const res = await base44.functions.invoke('resolveUserNames', { ids });
-            const names = res?.data?.names || res?.names || {};
+            const { names } = await resolveUsers(ids);
             for (const rid of ids) map[rid] = { full_name: names[rid] || 'User' };
           } catch {
             for (const rid of ids) map[rid] = { full_name: 'User' };

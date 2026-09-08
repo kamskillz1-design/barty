@@ -5,6 +5,7 @@ import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import moment from 'moment';
+import { resolveUsers } from '@/lib/userMeta';
 
 const STATUS_STYLE = {
   open: 'bg-amber-50 text-amber-700',
@@ -30,8 +31,8 @@ export default function AdminReports() {
       const ids = [...new Set((recs || []).flatMap((r) => [r.reported_user_id, r.reporter_id]).filter(Boolean))];
       if (ids.length) {
         try {
-          const res = await base44.functions.invoke('resolveUserNames', { ids });
-          setNames(res?.data?.names || res?.names || {});
+          const { names } = await resolveUsers(ids);
+          setNames(names);
         } catch { /* generic labels */ }
       }
     } finally {

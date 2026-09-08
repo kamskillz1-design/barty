@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { ShieldX, Unlock } from 'lucide-react';
+import { resolveUsers } from '@/lib/userMeta';
 
 /**
  * BlockedUsersList — Settings section listing users the current user has
@@ -22,8 +23,8 @@ export default function BlockedUsersList() {
       const ids = [...new Set((recs || []).map((b) => b.blocked_id).filter(Boolean))];
       if (ids.length) {
         try {
-          const res = await base44.functions.invoke('resolveUserNames', { ids });
-          setNames(res?.data?.names || res?.names || {});
+          const { names } = await resolveUsers(ids);
+          setNames(names);
         } catch { /* keep placeholder */ }
       }
     } finally {

@@ -2,7 +2,8 @@ import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
-import GTranslateWidget from '@/components/GTranslateWidget';
+import GTranslateEngine from '@/components/GTranslateEngine';
+import GTranslateSwitcher from '@/components/GTranslateSwitcher';
 import { Compass, Package, ArrowLeftRight, User, LogOut, LogIn, Sparkles, ShieldAlert } from 'lucide-react';
 
 export default function Layout() {
@@ -48,7 +49,8 @@ export default function Layout() {
             })}
           </nav>
           <div className="flex items-center gap-2">
-            <GTranslateWidget />
+            <GTranslateEngine />
+            <GTranslateSwitcher />
             {user ? (
               <button
                 onClick={() => logout(true)}
