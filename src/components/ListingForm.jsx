@@ -6,6 +6,7 @@ import { COUNTRIES } from '@/lib/geoData';
 import { EXCHANGE_TYPES, categoriesForType, getCategory, EXCHANGE_LOCATIONS, subcatKey, OTHER_KEY } from '@/lib/categories';
 import { ImagePlus, X, Save, ArrowLeftRight } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { geocode } from '@/lib/geocode';
 
 /**
  * Reusable listing form (I Have / I Want architecture) used by CreateListing
@@ -82,10 +83,16 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
 
   const submit = async (e) => {
     e.preventDefault();
+    // Saving (create or edit) counts as re-confirming the listing is active.
+    // Coordinates for proximity ranking come from a best-effort city geocode.
+    const locationQuery = [form.city, form.country].filter(Boolean).join(', ');
+    const coords = locationQuery ? await geocode(locationQuery) : null;
     const data = {
       ...form,
       baseline_value: Number(form.baseline_value) || 50,
       image_urls: imageUrls,
+      last_confirmed_date: new Date().toISOString(),
+      ...(coords ? { lat: coords.lat, lng: coords.lng } : {}),
       // clear WANT side when open to anything
       want_exchange_type: form.is_open_to_anything ? '' : form.want_exchange_type,
       want_category: form.is_open_to_anything ? '' : form.want_category,

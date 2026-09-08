@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SafetyBanner from '@/components/SafetyBanner';
 import ValueMatchIndicator from '@/components/ValueMatchIndicator';
 import SafeSpotSelector from '@/components/SafeSpotSelector';
+import CounterOffer from '@/components/trade/CounterOffer';
+import MeetupScheduler from '@/components/trade/MeetupScheduler';
+import ReportUserButton from '@/components/report/ReportUserButton';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Send, Check, X, Star, ShieldX } from 'lucide-react';
+import { ArrowLeft, Send, Check, X, Star, ShieldX, Receipt } from 'lucide-react';
 
 const STATUS_STYLE = {
   pending: 'bg-amber-50 text-amber-700',
@@ -86,6 +89,36 @@ export default function TradeDetail() {
   const decline = () => updateTrade({ status: 'cancelled' });
   const cancel = () => updateTrade({ status: 'cancelled' });
 
+  // Counter-offer lifecycle: the receiver proposes a different listing of
+  // theirs; the proposer accepts (the requested side is swapped to the counter
+  // listing) or declines (the counter clears, the trade stays pending).
+  const clearCounter = {
+    counter_listing_id: '',
+    counter_listing_title: '',
+    counter_listing_value: null,
+    counter_message: '',
+    counter_proposed_by_id: ''
+  };
+
+  const acceptCounter = async () => {
+    await updateTrade({
+      requested_listing_id: trade.counter_listing_id,
+      requested_listing_title: trade.counter_listing_title,
+      requested_listing_value: trade.counter_listing_value,
+      ...clearCounter
+    });
+    await base44.entities.Message.create({ trade_id: id, sender_id: user.id, kind: 'system', text: 'Counter-offer accepted' });
+    base44.functions.invoke('sendTradeNotification', { trade_id: id, kind: 'counter' }).catch(() => {});
+    load();
+  };
+
+  const declineCounter = async () => {
+    await updateTrade({ ...clearCounter });
+    await base44.entities.Message.create({ trade_id: id, sender_id: user.id, kind: 'system', text: 'Counter-offer declined' });
+    base44.functions.invoke('sendTradeNotification', { trade_id: id, kind: 'message' }).catch(() => {});
+    load();
+  };
+
   const markComplete = async () => {
     const isProposer = trade.proposer_id === user.id;
     const patch = isProposer ? { proposer_completed: true } : { receiver_completed: true };
@@ -110,6 +143,7 @@ export default function TradeDetail() {
     try {
       await base44.entities.Message.create({ trade_id: id, sender_id: user.id, text: text.trim() });
       setText('');
+      base44.functions.invoke('sendTradeNotification', { trade_id: id, kind: 'message' }).catch(() => {});
       load();
     } finally {
       setSending(false);
@@ -144,6 +178,7 @@ export default function TradeDetail() {
   if (!trade) return <div className="py-20 text-center text-slate-400">{t.common.empty}</div>;
 
   const outgoing = trade.proposer_id === user.id;
+  const counterActive = !!trade.counter_listing_id;
   const otherCompleted = outgoing ? trade.receiver_completed : trade.proposer_completed;
   const myCompleted = outgoing ? trade.proposer_completed : trade.receiver_completed;
   const otherName = otherUser?.full_name || t.common.member;
@@ -181,6 +216,31 @@ export default function TradeDetail() {
           />
         )}
 
+        {(trade.status === 'pending' || trade.status === 'accepted') && !blockActive && (
+          <MeetupScheduler trade={trade} onDone={load} />
+        )}
+
+        {counterActive && outgoing && trade.status === 'pending' && (
+          <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <p className="text-sm font-semibold text-amber-800">{t.v2?.counterReceived || 'Counter-offer received'}</p>
+            <div className="mt-2 rounded-xl border border-amber-100 bg-white p-3">
+              <p className="text-xs text-slate-400">{t.trade.requested}</p>
+              <p className="truncate font-semibold text-slate-900">{trade.counter_listing_title}</p>
+              {trade.counter_message && <p className="mt-1 text-sm text-slate-500">{trade.counter_message}</p>}
+              <div className="mt-2">
+                <ValueMatchIndicator offeredValue={trade.offered_listing_value} requestedValue={trade.counter_listing_value} />
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button onClick={acceptCounter} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"><Check className="h-4 w-4" /> {t.v2?.counterAccept || 'Accept counter-offer'}</button>
+              <button onClick={declineCounter} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"><X className="h-4 w-4" /> {t.v2?.counterDecline || 'Decline counter-offer'}</button>
+            </div>
+          </div>
+        )}
+        {counterActive && !outgoing && trade.status === 'pending' && (
+          <p className="mt-2 text-xs text-amber-600">{t.v2?.counterSentNotice || 'Counter-offer sent — waiting for a response.'}</p>
+        )}
+
         {/* Actions */}
         <div className="mt-4 flex flex-wrap gap-2">
           {trade.status === 'pending' && !outgoing && (
@@ -188,6 +248,9 @@ export default function TradeDetail() {
               <button onClick={accept} className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600"><Check className="h-4 w-4" /> {t.trade.accept}</button>
               <button onClick={decline} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"><X className="h-4 w-4" /> {t.trade.decline}</button>
             </>
+          )}
+          {trade.status === 'pending' && !outgoing && !counterActive && (
+            <CounterOffer trade={trade} onDone={load} />
           )}
           {(trade.status === 'pending' || trade.status === 'accepted') && (
             <button onClick={markComplete} disabled={myCompleted} className="inline-flex items-center gap-1.5 rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-600 disabled:opacity-60">
@@ -205,7 +268,10 @@ export default function TradeDetail() {
         )}
 
         {trade.status === 'completed' && (
-          <div className="mt-3">
+          <div className="mt-3 space-y-3">
+            <Link to={`/trades/${id}/receipt`} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+              <Receipt className="h-4 w-4" /> {t.v2?.receiptTitle || 'Trade receipt'}
+            </Link>
             {myReview ? (
               <p className="flex items-center gap-1.5 text-sm text-emerald-600"><Check className="h-4 w-4" /> {t.trade.reviewLeft}</p>
             ) : (
@@ -245,6 +311,7 @@ export default function TradeDetail() {
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="font-bold text-slate-900">{t.trade.chat}</h3>
           <div className="flex items-center gap-1.5">
+            {otherUserId && otherUserId !== user.id && <ReportUserButton userId={otherUserId} tradeId={id} />}
             {!blockByMe && (
               <button onClick={handleBlockUser} title={t.call.blockUser}
                 className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200">

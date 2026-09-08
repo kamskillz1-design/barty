@@ -7,6 +7,8 @@ import SafetyBanner from '@/components/SafetyBanner';
 import ValueMatchIndicator from '@/components/ValueMatchIndicator';
 import FlagButton from '@/components/flags/FlagButton';
 import CommentsSection from '@/components/comments/CommentsSection';
+import SavedButton from '@/components/SavedButton';
+import OwnerBadges from '@/components/UserBadges';
 import { ArrowLeft, MapPin, Wrench, Package, ArrowRight, Check, X, Pencil, Globe, ShieldAlert } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
@@ -18,6 +20,8 @@ export default function ListingDetail() {
   const { user } = useAuth();
   const [listing, setListing] = useState(null);
   const [owner, setOwner] = useState(null);
+  const [ownerMeta, setOwnerMeta] = useState(null);
+  const [stillConfirmed, setStillConfirmed] = useState(false);
   const [myListings, setMyListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [proposing, setProposing] = useState(false);
@@ -34,7 +38,10 @@ export default function ListingDetail() {
           try {
             const res = await base44.functions.invoke('resolveUserNames', { ids: [l.offering_user_id] });
             const names = res?.data?.names || res?.names || {};
+            const reviewCounts = res?.data?.reviewCounts || res?.reviewCounts || {};
+            const verifiedIds = res?.data?.verified || res?.verified || [];
             setOwner({ full_name: names[l.offering_user_id] || 'User' });
+            setOwnerMeta({ reviewCount: reviewCounts[l.offering_user_id] ?? 0, verified: verifiedIds.includes(l.offering_user_id) });
           } catch {}
         }
         if (user) {
@@ -54,7 +61,7 @@ export default function ListingDetail() {
     setSending(true);
     try {
       const offered = myListings.find((m) => m.id === selected);
-      await base44.entities.Trade.create({
+      const tr = await base44.entities.Trade.create({
         offered_listing_id: offered.id,
         offered_listing_title: offered.title,
         offered_listing_value: offered.baseline_value,
@@ -67,6 +74,8 @@ export default function ListingDetail() {
         proposer_completed: false,
         receiver_completed: false
       });
+      // Email the owner about the new proposal (non-blocking).
+      base44.functions.invoke('sendTradeNotification', { trade_id: tr.id, kind: 'proposal' }).catch(() => {});
       setSuccess(true);
       setProposing(false);
     } finally {
@@ -76,6 +85,18 @@ export default function ListingDetail() {
 
   if (loading) return <div className="py-20 text-center text-slate-400">{t.common.loading}</div>;
   if (!listing) return <div className="py-20 text-center text-slate-400">{t.common.empty}</div>;
+
+  // Owners of listings unconfirmed for ~60 days see a one-tap re-confirmation.
+  const confirmStillAvailable = async () => {
+    const now = new Date().toISOString();
+    try {
+      await base44.entities.Listing.update(listing.id, { last_confirmed_date: now });
+      setListing((cur) => ({ ...cur, last_confirmed_date: now }));
+      setStillConfirmed(true);
+    } catch { /* try again later */ }
+  };
+  const lastConfirmed = listing.last_confirmed_date ? new Date(listing.last_confirmed_date).getTime() : 0;
+  const isStale = isOwner && (!lastConfirmed || Date.now() - lastConfirmed > 60 * 24 * 60 * 60 * 1000);
 
   const loc = [listing.town, listing.city, listing.country].filter(Boolean).join(', ');
 
@@ -94,6 +115,16 @@ export default function ListingDetail() {
       {listing.status === 'hidden' && (
         <div className="flex items-center gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
           <ShieldAlert className="h-4 w-4" /> {t.community?.flag?.hiddenNotice || 'This listing has been hidden pending moderator review.'}
+        </div>
+      )}
+
+      {isStale && (
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+          <p className="font-semibold">{t.v2?.stillAvailableTitle || 'Still offering this?'}</p>
+          <p className="mt-0.5 text-sky-700">{t.v2?.stillAvailableHint || 'This listing has not been confirmed in a while. Confirm it stays visible in Explore.'}</p>
+          <button onClick={confirmStillAvailable} className="mt-2 rounded-xl bg-sky-500 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-600">
+            {stillConfirmed ? (t.v2?.stillAvailableDone || 'Thanks — confirmed as active.') : (t.v2?.stillAvailableBtn || 'Yes, still available')}
+          </button>
         </div>
       )}
 
@@ -124,7 +155,10 @@ export default function ListingDetail() {
             </div>
             <div className="mt-3 flex items-start justify-between gap-2">
               <h1 className="text-2xl font-bold text-slate-900">{listing.title}</h1>
-              {!isOwner && <FlagButton listingId={listing.id} />}
+              <div className="flex shrink-0 items-center gap-2">
+                {!isOwner && user && <SavedButton listing={listing} />}
+                {!isOwner && <FlagButton listingId={listing.id} />}
+              </div>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-slate-500">
               {listing.have_category && <span className="rounded-md bg-slate-100 px-2 py-0.5 font-medium text-slate-600">{categoryLabel(t, listing.have_category)}{listing.have_subcategory ? ` · ${subcatLabel(t, listing.have_subcategory)}` : ''}</span>}
@@ -168,7 +202,10 @@ export default function ListingDetail() {
                 {(owner.full_name || '?').charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-slate-900 notranslate" translate="no">{owner.full_name || '—'}</p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="text-sm font-semibold text-slate-900 notranslate" translate="no">{owner.full_name || '—'}</p>
+                  <OwnerBadges meta={ownerMeta} />
+                </div>
               </div>
             </Link>
           )}

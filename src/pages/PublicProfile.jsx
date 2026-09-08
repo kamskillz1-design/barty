@@ -7,6 +7,8 @@ import { Star, MapPin, Package, ShieldX, Unlock } from 'lucide-react';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, categoryLabel, subcatLabel } from '@/lib/categories';
 import ReviewsList from '@/components/reviews/ReviewsList';
+import ReportUserButton from '@/components/report/ReportUserButton';
+import { VerifiedBadge } from '@/components/UserBadges';
 
 export default function PublicProfile() {
   const { id } = useParams();
@@ -19,6 +21,7 @@ export default function PublicProfile() {
   const [tab, setTab] = useState('listings');
   const [blockByMe, setBlockByMe] = useState(false);
   const [blockByOther, setBlockByOther] = useState(false);
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -32,6 +35,10 @@ export default function PublicProfile() {
         setListings(mine || []);
         const revs = await base44.entities.Review.filter({ reviewee_id: id }, '-created_date', 50);
         setReviews(revs || []);
+        try {
+          const vr = await base44.entities.VerificationRequest.filter({ user_id: id, status: 'approved' });
+          setVerified((vr || []).length > 0);
+        } catch { /* verification unknown — hide badge */ }
         if (viewer?.id && viewer.id !== id) {
           try {
             const theirs = await base44.entities.UserBlock.filter({ blocked_id: viewer.id, active: true });
@@ -75,7 +82,10 @@ export default function PublicProfile() {
             {initial}
           </div>
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-slate-900 notranslate" translate="no">{user.full_name || '—'}</h1>
+            <h1 className="flex flex-wrap items-center gap-2 text-xl font-bold text-slate-900">
+              <span className="notranslate" translate="no">{user.full_name || '—'}</span>
+              {verified && <VerifiedBadge />}
+            </h1>
             {user.city && <p className="mt-1 flex items-center gap-1 text-sm text-slate-500"><MapPin className="h-3.5 w-3.5" />{user.city}{user.country ? `, ${user.country}` : ''}</p>}
             {avg && (
               <div className="mt-1.5 flex items-center gap-1 text-sm font-medium text-amber-600">
@@ -84,6 +94,9 @@ export default function PublicProfile() {
               </div>
             )}
           </div>
+          {viewer?.id && viewer.id !== id && (
+            <ReportUserButton userId={id} />
+          )}
           {viewer?.id && viewer.id !== id && (
             blockByMe ? (
               <button onClick={unblockUser} className="inline-flex items-center gap-1.5 rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200">
