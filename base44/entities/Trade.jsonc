@@ -62,6 +62,45 @@
     "safe_spot_id": {
       "type": "string",
       "description": "Optional Verified Safe Hub chosen for the in-person exchange"
+    },
+    "counter_listing_id": {
+      "type": "string",
+      "description": "Counter-offer: different listing the receiver offers instead of the requested one. Empty when no counter is active."
+    },
+    "counter_listing_title": {
+      "type": "string",
+      "description": "Snapshot title of the counter-offer listing"
+    },
+    "counter_listing_value": {
+      "type": "integer",
+      "description": "Snapshot baseline value of the counter-offer listing"
+    },
+    "counter_message": {
+      "type": "string",
+      "description": "Optional message attached to the counter-offer"
+    },
+    "counter_proposed_by_id": {
+      "type": "string",
+      "description": "User who proposed the current counter-offer"
+    },
+    "meetup_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Agreed (or proposed) meetup date and time for the in-person exchange"
+    },
+    "meetup_proposed_by_id": {
+      "type": "string",
+      "description": "User who proposed the current meetup time"
+    },
+    "meetup_confirmed": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once both participants agreed on the meetup time"
+    },
+    "nudged_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the last idle-trade completion nudge was sent (scheduled workflow bookkeeping)"
     }
   },
   "required": [

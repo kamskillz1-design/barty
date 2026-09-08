@@ -1,0 +1,52 @@
+{
+  "name": "VerificationRequest",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User requesting verification"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "email",
+        "phone"
+      ],
+      "description": "Verification method offered"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional context from the user"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Admin-reviewed status. 'approved' unlocks the verified badge."
+    }
+  },
+  "required": [
+    "user_id",
+    "method"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

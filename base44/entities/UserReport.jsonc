@@ -1,0 +1,74 @@
+{
+  "name": "UserReport",
+  "type": "object",
+  "properties": {
+    "reported_user_id": {
+      "type": "string",
+      "description": "User being reported"
+    },
+    "reporter_id": {
+      "type": "string",
+      "description": "User who filed the report"
+    },
+    "trade_id": {
+      "type": "string",
+      "description": "Trade the report originated from, if any"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "harassment",
+        "scam",
+        "inappropriate",
+        "other"
+      ],
+      "description": "Reason for the report"
+    },
+    "note": {
+      "type": "string",
+      "description": "Optional extra details from the reporter"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "open",
+        "reviewed",
+        "resolved"
+      ],
+      "default": "open",
+      "description": "Moderation status"
+    }
+  },
+  "required": [
+    "reported_user_id",
+    "reporter_id",
+    "reason"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "created_by_id": "{{user.id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

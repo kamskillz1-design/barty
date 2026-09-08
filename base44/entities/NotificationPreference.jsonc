@@ -1,0 +1,32 @@
+{
+  "name": "NotificationPreference",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "User this preference belongs to"
+    },
+    "email_notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the user wants trade activity emails (proposals, messages, counter-offers, nudges)"
+    }
+  },
+  "required": [
+    "user_id"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}

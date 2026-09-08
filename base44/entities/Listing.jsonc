@@ -116,6 +116,24 @@
     "offering_user_id": {
       "type": "string",
       "description": "User who owns this listing"
+    },
+    "lat": {
+      "type": "number",
+      "description": "Approximate latitude of the listing location (geocoded from city), used for proximity ranking. Optional."
+    },
+    "lng": {
+      "type": "number",
+      "description": "Approximate longitude of the listing location (geocoded from city), used for proximity ranking. Optional."
+    },
+    "last_confirmed_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the owner last confirmed the listing is still available (set on create/edit/confirm). Listings unconfirmed for ~60 days are demoted in Explore ranking."
+    },
+    "stale_prompted_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the last 'still available?' email prompt was sent (scheduled workflow bookkeeping)"
     }
   },
   "required": [

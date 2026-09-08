@@ -1,0 +1,39 @@
+{
+  "name": "SavedListing",
+  "type": "object",
+  "properties": {
+    "listing_id": {
+      "type": "string",
+      "description": "Listing saved as a favorite"
+    },
+    "listing_title": {
+      "type": "string",
+      "description": "Snapshot title for quick rendering in the saved list"
+    },
+    "listing_image_url": {
+      "type": "string",
+      "description": "Snapshot first image URL, if any"
+    },
+    "owner_id": {
+      "type": "string",
+      "description": "Snapshot of the listing owner user id"
+    }
+  },
+  "required": [
+    "listing_id"
+  ],
+  "rls": {
+    "read": {
+      "created_by_id": "{{user.id}}"
+    },
+    "create": {
+      "created_by_id": "{{user.id}}"
+    },
+    "update": {
+      "created_by_id": "{{user.id}}"
+    },
+    "delete": {
+      "created_by_id": "{{user.id}}"
+    }
+  }
+}
