@@ -10,6 +10,10 @@ import { COUNTRIES } from '@/lib/geoData';
 import { Search, Plus, Package, Scale, Globe2, Sparkles, SlidersHorizontal } from 'lucide-react';
 import GlobalImpactCounter from '@/components/GlobalImpactCounter';
 import LocalDiscovery from '@/components/LocalDiscovery';
+import SuggestedForYou from '@/components/explore/SuggestedForYou';
+import Leaderboard from '@/components/explore/Leaderboard';
+import OnboardingChecklist from '@/components/explore/OnboardingChecklist';
+import { approxDistanceKm } from '@/lib/matching';
 import { EXCHANGE_TYPES, categoriesForType, CATEGORY_TREE, OTHER_KEY } from '@/lib/categories';
 import { getUserLocation, reverseGeocode } from '@/lib/geocode';
 
@@ -27,6 +31,8 @@ export default function Explore() {
   const [countryFilter, setCountryFilter] = useState('');
   const [townFilter, setTownFilter] = useState('');
   const [ownerNames, setOwnerNames] = useState({});
+  const [ownerMeta, setOwnerMeta] = useState({});
+  const [myCoords, setMyCoords] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -48,7 +54,12 @@ export default function Explore() {
           try {
             const res = await base44.functions.invoke('resolveUserNames', { ids });
             const names = res?.data?.names || res?.names || {};
+            const reviewCounts = res?.data?.reviewCounts || res?.reviewCounts || {};
+            const verifiedIds = res?.data?.verified || res?.verified || [];
             setOwnerNames(names);
+            const meta = {};
+            ids.forEach((uid) => { meta[uid] = { reviewCount: reviewCounts[uid] ?? 0, verified: verifiedIds.includes(uid) }; });
+            setOwnerMeta(meta);
           } catch { /* keep generic fallback labels */ }
         }
       } finally {
@@ -65,7 +76,7 @@ export default function Explore() {
         if (coords) {
           const rev = await reverseGeocode(coords[0], coords[1]);
           if (rev && (rev.country || rev.city)) {
-            loc = rev;
+            loc = { ...rev, lat: coords[0], lng: coords[1] };
             try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(loc)); } catch { /* ignore */ }
           }
         }
@@ -73,6 +84,7 @@ export default function Explore() {
       if (loc) {
         if (loc.country) setCountryFilter(loc.country);
         if (loc.city) setTownFilter(loc.city);
+        if (typeof loc.lat === 'number' && typeof loc.lng === 'number') setMyCoords([loc.lat, loc.lng]);
       }
     })();
   }, []);
@@ -95,16 +107,28 @@ export default function Explore() {
       return true;
     });
     // Order: city matches first, then same-country, then online listings, then the rest.
+    // Within a tier, nearest first when coordinates are known; listings whose
+    // owner hasn't confirmed them in ~60 days are demoted to the bottom.
     const cl = tl;
     const cf = countryFilter.trim().toLowerCase();
-    const rank = (l) => {
-      if (cl && (`${l.town || ''} ${l.city || ''}`).toLowerCase().includes(cl)) return 0;
-      if (cf && (l.country || '').toLowerCase() === cf) return 1;
-      if (l.exchange_location === 'online') return 2;
-      return 3;
+    const STALE_MS = 60 * 24 * 60 * 60 * 1000;
+    const isStale = (l) => {
+      const c = l.last_confirmed_date ? new Date(l.last_confirmed_date).getTime() : 0;
+      return !c || Date.now() - c > STALE_MS;
     };
-    return [...base].sort((a, b) => rank(a) - rank(b));
-  }, [listings, q, category, exchType, countryFilter, townFilter]);
+    const dist = (l) => (myCoords && typeof l.lat === 'number' && typeof l.lng === 'number')
+      ? approxDistanceKm(myCoords[0], myCoords[1], l.lat, l.lng)
+      : Infinity;
+    const rank = (l) => {
+      let r;
+      if (cl && (`${l.town || ''} ${l.city || ''}`).toLowerCase().includes(cl)) r = 0;
+      else if (cf && (l.country || '').toLowerCase() === cf) r = 1;
+      else if (l.exchange_location === 'online') r = 2;
+      else r = 3;
+      return isStale(l) ? r + 4 : r;
+    };
+    return [...base].sort((a, b) => (rank(a) - rank(b)) || (dist(a) - dist(b)));
+  }, [listings, q, category, exchType, countryFilter, townFilter, myCoords]);
 
   return (
     <div className="space-y-7">
@@ -136,6 +160,10 @@ export default function Explore() {
       </div>
 
       <SafetyBanner />
+
+      <OnboardingChecklist />
+      <SuggestedForYou listings={listings} ownerNames={ownerNames} ownerMeta={ownerMeta} />
+      <Leaderboard />
 
       {/* Filters */}
       <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
@@ -179,7 +207,7 @@ export default function Explore() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((l) => <BarterCard key={l.id} listing={l} ownerName={ownerNames[l.offering_user_id]} />)}
+          {filtered.map((l) => <BarterCard key={l.id} listing={l} ownerName={ownerNames[l.offering_user_id]} ownerMeta={ownerMeta[l.offering_user_id]} />)}
         </div>
       )}
     </div>

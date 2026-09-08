@@ -5,13 +5,14 @@ import moment from 'moment';
 import { useI18n } from '@/lib/i18n';
 import { Image } from '@/components/ui/image';
 import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
+import OwnerBadges from '@/components/UserBadges';
 
 /**
  * BarterCard — renders ONE listing as a single trade proposition: the HAVE
  * half (what the owner offers) on top and the WANT half (what they want in
  * return) below, with clear HAVING / WANTING badges.
  */
-export default function BarterCard({ listing, ownerName }) {
+export default function BarterCard({ listing, ownerName, ownerMeta }) {
   const { t } = useI18n();
 
   const haveType = EXCHANGE_TYPES.find((x) => x.id === listing.have_exchange_type);
@@ -39,7 +40,10 @@ export default function BarterCard({ listing, ownerName }) {
           <User className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-slate-700 notranslate" translate="no">{ownerName || t.common.member}</p>
+          <p className="flex items-center gap-1.5">
+            <span className="truncate text-sm font-medium text-slate-700 notranslate" translate="no">{ownerName || t.common.member}</span>
+            <OwnerBadges meta={ownerMeta} />
+          </p>
           <p className="text-xs text-slate-400">{listing.created_date ? moment(listing.created_date).fromNow() : ''}</p>
         </div>
         {exchLoc && (

@@ -3,7 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import GTranslateWidget from '@/components/GTranslateWidget';
-import { Compass, Package, ArrowLeftRight, User, LogOut, LogIn, Sparkles } from 'lucide-react';
+import { Compass, Package, ArrowLeftRight, User, LogOut, LogIn, Sparkles, ShieldAlert } from 'lucide-react';
 
 export default function Layout() {
   const { t } = useI18n();
@@ -16,6 +16,9 @@ export default function Layout() {
     { to: '/trades', label: t.nav.trades, icon: ArrowLeftRight },
     { to: '/profile', label: t.nav.profile, icon: User }
   ];
+  if (user?.role === 'admin') {
+    links.push({ to: '/admin/reports', label: t.v2?.adminReports || 'User reports', icon: ShieldAlert });
+  }
 
   const isActive = (path) => location.pathname === path || (path === '/explore' && location.pathname === '/');
 

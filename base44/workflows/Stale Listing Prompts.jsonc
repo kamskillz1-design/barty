@@ -1,0 +1,45 @@
+{
+  "trigger": {
+    "condition": null,
+    "config": {
+      "trigger_type": "scheduled",
+      "events": [],
+      "schedule_mode": "recurring",
+      "cron_expression": "0 10 * * *",
+      "one_time_date": null,
+      "timezone": "Europe/Madrid",
+      "interval_value": null,
+      "interval_unit": null,
+      "interval_anchor": null,
+      "ends_type": "never",
+      "ends_on_date": null,
+      "ends_after_count": null
+    }
+  },
+  "description": "Daily check that emails owners of listings unconfirmed for ~60 days",
+  "name": "Stale Listing Prompts",
+  "definition": {
+    "document": {
+      "dsl": "1.0.0",
+      "name": "stale_listing_prompts",
+      "version": "1.0",
+      "namespace": "base44"
+    },
+    "do": [
+      {
+        "prompt_stale": {
+          "call": "invoke_backend_function",
+          "with": {
+            "function_name": "promptStaleListings",
+            "args": {}
+          },
+          "then": "end",
+          "x-base44": {
+            "title": "Prompt stale listings",
+            "description": "Email owners of unconfirmed listings"
+          }
+        }
+      }
+    ]
+  }
+}
