@@ -1,14 +1,13 @@
-import { createClient } from '@base44/sdk';
-import { appParams } from '@/lib/app-params';
+import { createClient } from "@supabase/supabase-js";
 
-const { appId, token, functionsVersion, appBaseUrl } = appParams;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabasePublishableKey =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-//Create a client with authentication required
-export const base44 = createClient({
-  appId,
-  token,
-  functionsVersion,
-  serverUrl: '',
-  requiresAuth: false,
-  appBaseUrl
-});
+if (!supabaseUrl || !supabasePublishableKey) {
+  throw new Error(
+    "Missing Supabase configuration. Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY in Vercel Environment Variables."
+  );
+}
+
+export const base44 = createClient(supabaseUrl, supabasePublishableKey);
