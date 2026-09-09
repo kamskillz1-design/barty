@@ -13,7 +13,7 @@ export async function resolveUsers(ids) {
 
   const { data: profiles, error: profilesError } = await base44
     .from("profiles")
-    .select("id, display_name, full_name, is_verified, verified")
+    .select("id, full_name, is_verified")
     .in("id", uniqueIds);
 
   if (profilesError) {
@@ -22,8 +22,8 @@ export async function resolveUsers(ids) {
 
   const { data: reviews, error: reviewsError } = await base44
     .from("reviews")
-    .select("reviewed_user_id")
-    .in("reviewed_user_id", uniqueIds);
+    .select("reviewee_id")
+    .in("reviewee_id", uniqueIds);
 
   if (reviewsError) {
     throw reviewsError;
@@ -39,18 +39,19 @@ export async function resolveUsers(ids) {
   });
 
   (profiles || []).forEach((profile) => {
-    names[profile.id] =
-      profile.display_name || profile.full_name || "Barti member";
+    if (profile.full_name?.trim()) {
+      names[profile.id] = profile.full_name.trim();
+    }
 
-    if (profile.is_verified || profile.verified) {
+    if (profile.is_verified) {
       verifiedIds.push(profile.id);
     }
   });
 
   (reviews || []).forEach((review) => {
-    if (review.reviewed_user_id) {
-      reviewCounts[review.reviewed_user_id] =
-        (reviewCounts[review.reviewed_user_id] || 0) + 1;
+    if (review.reviewee_id) {
+      reviewCounts[review.reviewee_id] =
+        (reviewCounts[review.reviewee_id] || 0) + 1;
     }
   });
 
