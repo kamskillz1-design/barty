@@ -16,37 +16,49 @@ export default function ResetPassword() {
   const [hasRecoverySession, setHasRecoverySession] = useState(false);
 
   useEffect(() => {
-  let isMounted = true;
+    let isMounted = true;
 
-  const finishCheck = (session) => {
-    if (!isMounted) return;
-    setHasRecoverySession(Boolean(session));
-    setCheckingRecovery(false);
-  };
+    const finishCheck = (session) => {
+      if (!isMounted) return;
 
-  const checkRecoverySession = async () => {
+      setHasRecoverySession(Boolean(session));
+      setCheckingRecovery(false);
+    };
+
+    const checkRecoverySession = async () => {
+      try {
+        const {
+          data: { session },
+          error,
+        } = await base44.auth.getSession();
+
+        if (error) {
+          throw error;
+        }
+
+        finishCheck(session);
+      } catch (error) {
+        console.error("Recovery-session check failed:", error);
+        finishCheck(null);
+      }
+    };
+
+    checkRecoverySession();
+
     const {
-      data: { session },
-    } = await base44.auth.getSession();
+      data: { subscription },
+    } = base44.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        finishCheck(session);
+      }
+    });
 
-    finishCheck(session);
-  };
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
-  checkRecoverySession();
-
-  const {
-    data: { subscription },
-  } = base44.auth.onAuthStateChange((event, session) => {
-    if (event === "PASSWORD_RECOVERY") {
-      finishCheck(session);
-    }
-  });
-
-  return () => {
-    isMounted = false;
-    subscription.unsubscribe();
-  };
-}, []);
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
