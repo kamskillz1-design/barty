@@ -17,16 +17,19 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      await base44.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-    } catch {
-      // Always show success regardless, so account existence is not disclosed.
-    } finally {
-      setLoading(false);
-      setSent(true);
-    }
-  };
+  const { error } = await base44.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
+
+  if (error) {
+    console.error("Password-reset request failed:", error);
+  }
+} catch (error) {
+  console.error("Password-reset request failed:", error);
+} finally {
+  setLoading(false);
+  setSent(true);
+}
 
   return (
     <AuthLayout
