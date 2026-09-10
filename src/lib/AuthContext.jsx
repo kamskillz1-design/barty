@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { supabase } from "@/api/base44Client";
 
 const AuthContext = createContext(null);
@@ -11,6 +11,7 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings] = useState(null);
+  const authEventRequestRef = useRef(0);
 
   const setSignedOutState = () => {
     setUser(null);
@@ -92,15 +93,29 @@ export const AuthProvider = ({ children }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!isMounted) return;
 
       const sessionUser = session?.user ?? null;
-      setUser(await enrichUser(sessionUser));
       setIsAuthenticated(Boolean(sessionUser));
       setAuthError(null);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+
+      if (!sessionUser) {
+        setUser(null);
+        return;
+      }
+
+      const requestId = ++authEventRequestRef.current;
+
+      void enrichUser(sessionUser).then((enrichedUser) => {
+        if (!isMounted || authEventRequestRef.current !== requestId) {
+          return;
+        }
+
+        setUser(enrichedUser);
+      });
     });
 
     return () => {

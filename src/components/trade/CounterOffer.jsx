@@ -48,13 +48,11 @@ export default function CounterOffer({ trade, onDone }) {
   }, [open, user, trade.requested_listing_id]);
 
   const submit = async () => {
-    if (!selected) return;
+    const sel = myListings.find((m) => m.id === selected);
+    if (!sel) return;
+
     setSending(true);
     try {
-      const sel = myListings.find((m) => m.id === selected);
-      if (!sel) {
-        return;
-      }
 
       const { error: tradeError } = await supabase
         .from('trades')
