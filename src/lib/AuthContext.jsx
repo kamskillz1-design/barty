@@ -17,6 +17,43 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  const enrichUser = async (authUser) => {
+    if (!authUser) {
+      return null;
+    }
+
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select(
+        "full_name, role, preferred_language, country, city, town, avatar_url, bio"
+      )
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Failed to load user profile:", error);
+    }
+
+    const metadata = authUser.user_metadata || {};
+
+    return {
+      ...authUser,
+      full_name:
+        profile?.full_name ||
+        metadata.full_name ||
+        metadata.name ||
+        authUser.email?.split("@")[0] ||
+        "",
+      role: profile?.role || "user",
+      preferred_language: profile?.preferred_language || "en",
+      country: profile?.country || metadata.country || "",
+      city: profile?.city || metadata.city || "",
+      town: profile?.town || metadata.town || "",
+      avatar_url: profile?.avatar_url || metadata.avatar_url || "",
+      bio: profile?.bio || "",
+    };
+  };
+
   useEffect(() => {
     let isMounted = true;
 
@@ -41,7 +78,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (currentUser) {
-        setUser(currentUser);
+        setUser(await enrichUser(currentUser));
         setIsAuthenticated(true);
       } else {
         setSignedOutState();
@@ -55,11 +92,11 @@ export const AuthProvider = ({ children }) => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isMounted) return;
 
       const sessionUser = session?.user ?? null;
-      setUser(sessionUser);
+      setUser(await enrichUser(sessionUser));
       setIsAuthenticated(Boolean(sessionUser));
       setAuthError(null);
       setIsLoadingAuth(false);
@@ -91,7 +128,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (currentUser) {
-      setUser(currentUser);
+      setUser(await enrichUser(currentUser));
       setIsAuthenticated(true);
     } else {
       setSignedOutState();
@@ -100,7 +137,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoadingAuth(false);
     setAuthChecked(true);
 
-    return currentUser ?? null;
+    return (await enrichUser(currentUser)) ?? null;
   };
 
   const checkAppState = () => checkUserAuth();
@@ -134,13 +171,15 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (currentUser) {
-      setUser(currentUser);
+      const enrichedUser = await enrichUser(currentUser);
+      setUser(enrichedUser);
       setIsAuthenticated(true);
+      return enrichedUser;
     } else {
       setSignedOutState();
     }
 
-    return currentUser ?? null;
+    return null;
   };
 
   const navigateToLogin = () => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, BellOff } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -21,9 +21,21 @@ export default function NotificationPrefs() {
     let alive = true;
     (async () => {
       try {
-        const recs = await base44.entities.NotificationPreference.filter({ user_id: user.id });
-        if (alive) setRec((recs || [])[0] || null);
-      } catch { /* default to on */ }
+        const { data, error } = await supabase
+          .from('notification_preferences')
+          .select('*')
+          .eq('user_id', user.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          throw error;
+        }
+
+        if (alive) setRec(data || null);
+      } catch (error) {
+        console.error('Failed to load notification preferences:', error);
+      }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
@@ -35,13 +47,34 @@ export default function NotificationPrefs() {
     setBusy(true);
     try {
       if (rec) {
-        const updated = await base44.entities.NotificationPreference.update(rec.id, { email_notifications: !enabled });
-        setRec(updated);
+        const { data, error } = await supabase
+          .from('notification_preferences')
+          .update({ email_notifications: !enabled })
+          .eq('id', rec.id)
+          .select()
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        setRec(data);
       } else {
-        const created = await base44.entities.NotificationPreference.create({ user_id: user.id, email_notifications: !enabled });
-        setRec(created);
+        const { data, error } = await supabase
+          .from('notification_preferences')
+          .insert({ user_id: user.id, email_notifications: !enabled })
+          .select()
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        setRec(data);
       }
-    } catch { /* toggle failed — state stays */ }
+    } catch (error) {
+      console.error('Failed to update notification preferences:', error);
+    }
     finally { setBusy(false); }
   };
 

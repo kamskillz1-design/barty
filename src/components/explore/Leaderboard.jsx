@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
+import { resolveUsers } from '@/lib/userMeta';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 const MEDALS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
 
@@ -22,7 +24,18 @@ export default function Leaderboard() {
         const monthStart = new Date();
         monthStart.setDate(1);
         monthStart.setHours(0, 0, 0, 0);
-        const trades = await base44.entities.Trade.filter({ status: 'completed' }, '-updated_date', 500);
+        const { data, error } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('status', 'completed')
+          .order('updated_at', { ascending: false })
+          .limit(500);
+
+        if (error) {
+          throw error;
+        }
+
+        const trades = withLegacyDatesList(data);
         const counts = {};
         for (const tr of (trades || [])) {
           if (!tr.updated_date || new Date(tr.updated_date) < monthStart) continue;
@@ -36,11 +49,15 @@ export default function Leaderboard() {
         setTop(ranked);
         if (ranked.length) {
           try {
-            const res = await base44.functions.invoke('resolveUserNames', { ids: ranked.map(([id]) => id) });
-            setNames(res?.data?.names || res?.names || {});
-          } catch { /* generic labels */ }
+            const { names } = await resolveUsers(ranked.map(([id]) => id));
+            setNames(names || {});
+          } catch (error) {
+            console.error('Failed to resolve leaderboard names:', error);
+          }
         }
-      } catch { /* leaderboard unavailable — hide */ }
+      } catch (error) {
+        console.error('Failed to load leaderboard:', error);
+      }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import BarterCard from '@/components/BarterCard';
 import { suggestForMe } from '@/lib/matching';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 /**
  * SuggestedForYou — Explore section that matches the user's listings (WANT vs
@@ -22,9 +23,22 @@ export default function SuggestedForYou({ listings, ownerNames, ownerMeta }) {
     let alive = true;
     (async () => {
       try {
-        const mine = await base44.entities.Listing.filter({ offering_user_id: user.id, status: 'available' }, '-created_date', 100);
-        if (alive) setMyListings(mine || []);
-      } catch { /* no listings yet */ }
+        const { data, error } = await supabase
+          .from('listings')
+          .select('*')
+          .eq('offering_user_id', user.id)
+          .eq('status', 'available')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (error) {
+          throw error;
+        }
+
+        if (alive) setMyListings(withLegacyDatesList(data));
+      } catch (error) {
+        console.error('Failed to load suggested listings source data:', error);
+      }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { ArrowRight, ArrowLeftRight } from 'lucide-react';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 const STATUS_STYLE = {
   pending: 'bg-amber-50 text-amber-700',
@@ -22,9 +23,21 @@ export default function Trades() {
   const load = async () => {
     setLoading(true);
     try {
-      const all = await base44.entities.Trade.list('-created_date', 200);
-      const mine = (all || []).filter((tr) => tr.proposer_id === user.id || tr.receiver_id === user.id);
-      setTrades(mine);
+      const { data, error } = await supabase
+        .from('trades')
+        .select('*')
+        .or(`proposer_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) {
+        throw error;
+      }
+
+      setTrades(withLegacyDatesList(data));
+    } catch (error) {
+      console.error('Failed to load trades:', error);
+      setTrades([]);
     } finally {
       setLoading(false);
     }

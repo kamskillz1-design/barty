@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CalendarCheck, CalendarClock, Check } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -23,18 +23,35 @@ export default function MeetupScheduler({ trade, onDone }) {
     setBusy(true);
     try {
       const iso = new Date(value).toISOString();
-      await base44.entities.Trade.update(trade.id, {
+      const { error: tradeError } = await supabase
+        .from('trades')
+        .update({
         meetup_at: iso,
         meetup_proposed_by_id: user.id,
         meetup_confirmed: false
-      });
-      await base44.entities.Message.create({
+        })
+        .eq('id', trade.id);
+
+      if (tradeError) {
+        throw tradeError;
+      }
+
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
         trade_id: trade.id,
         sender_id: user.id,
         kind: 'system',
         text: `Meetup time proposed: ${fmt(iso)}`
-      });
+        });
+
+      if (messageError) {
+        throw messageError;
+      }
+
       onDone && onDone();
+    } catch (error) {
+      console.error('Failed to propose meetup time:', error);
     } finally {
       setBusy(false);
     }
@@ -43,14 +60,31 @@ export default function MeetupScheduler({ trade, onDone }) {
   const confirm = async () => {
     setBusy(true);
     try {
-      await base44.entities.Trade.update(trade.id, { meetup_confirmed: true });
-      await base44.entities.Message.create({
+      const { error: tradeError } = await supabase
+        .from('trades')
+        .update({ meetup_confirmed: true })
+        .eq('id', trade.id);
+
+      if (tradeError) {
+        throw tradeError;
+      }
+
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
         trade_id: trade.id,
         sender_id: user.id,
         kind: 'system',
         text: `Meetup time confirmed: ${fmt(trade.meetup_at)}`
-      });
+        });
+
+      if (messageError) {
+        throw messageError;
+      }
+
       onDone && onDone();
+    } catch (error) {
+      console.error('Failed to confirm meetup time:', error);
     } finally {
       setBusy(false);
     }

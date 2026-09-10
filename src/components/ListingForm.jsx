@@ -5,8 +5,8 @@ import SearchableSelect from '@/components/SearchableSelect';
 import { COUNTRIES } from '@/lib/geoData';
 import { EXCHANGE_TYPES, categoriesForType, getCategory, EXCHANGE_LOCATIONS, subcatKey, OTHER_KEY } from '@/lib/categories';
 import { ImagePlus, X, Save, ArrowLeftRight } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import { geocode } from '@/lib/geocode';
+import { uploadListingImage } from '@/lib/supabaseStorage';
 
 /**
  * Reusable listing form (I Have / I Want architecture) used by CreateListing
@@ -63,9 +63,11 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
     setUploading(true);
     try {
       const uploaded = await Promise.all(
-        files.map((file) => base44.integrations.Core.UploadFile({ file }))
+        files.map((file) => uploadListingImage(file))
       );
       setImageUrls((arr) => [...arr, ...uploaded.map((u) => u.file_url).filter(Boolean)]);
+    } catch (error) {
+      console.error('Failed to upload listing images:', error);
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -279,7 +281,7 @@ export default function ListingForm({ initialValues, onSubmit, saving, submitLab
           <label className="mb-1.5 block text-sm font-medium text-slate-700">{t.listing.images}</label>
           <label className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-100 ${uploading ? 'opacity-60 pointer-events-none' : ''}`}>
             <ImagePlus className="h-4 w-4" />
-            {uploading ? t.common.loading : t.listing.addImage}
+            {uploading ? t.common.loading : (t.listing.addImage || 'Add image')}
             <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} disabled={uploading} />
           </label>
           {imageUrls.length > 0 && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { Recycle, Clock, CheckCircle2 } from 'lucide-react';
 
@@ -16,12 +16,35 @@ export default function ImpactStats({ user }) {
     if (!user?.id) return;
     (async () => {
       try {
-        const mine = await base44.entities.Listing.filter({ offering_user_id: user.id }, '-created_date', 1000);
+        const [{ data: mine, error: listingsError }, { data: all, error: tradesError }] = await Promise.all([
+          supabase
+            .from('listings')
+            .select('id, status')
+            .eq('offering_user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(1000),
+          supabase
+            .from('trades')
+            .select('id, proposer_id, receiver_id')
+            .eq('status', 'completed')
+            .order('created_at', { ascending: false })
+            .limit(1000)
+        ]);
+
+        if (listingsError) {
+          throw listingsError;
+        }
+
+        if (tradesError) {
+          throw tradesError;
+        }
+
         const kept = (mine || []).filter((l) => l.status === 'traded').length;
-        const all = await base44.entities.Trade.filter({ status: 'completed' }, '-created_date', 1000);
         const done = (all || []).filter((tr) => tr.proposer_id === user.id || tr.receiver_id === user.id).length;
         setStats({ itemsKept: kept, hoursSaved: done * 3, trades: done });
-      } catch { /* ignore */ }
+      } catch (error) {
+        console.error('Failed to load impact stats:', error);
+      }
     })();
   }, [user?.id]);
 

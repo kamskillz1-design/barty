@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { Flag, ShieldAlert, Check } from 'lucide-react';
@@ -30,10 +30,29 @@ export default function FlagButton({ listingId, className = '' }) {
     if (!user) { setOpen(false); return; }
     setSubmitting(true);
     try {
-      const res = await base44.functions.invoke('submitFlag', { listing_id: listingId, reason, note });
-      const data = res.data || {};
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+      const response = await fetch('/api/submit-flag', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(session?.access_token
+            ? { Authorization: 'Bearer ' + session.access_token }
+            : {})
+        },
+        body: JSON.stringify({ listing_id: listingId, reason, note })
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to submit report');
+      }
+
       if (data.alreadyFlagged) { setAlready(true); setDone(true); }
       else setDone(true);
+    } catch (error) {
+      console.error('Failed to submit listing flag:', error);
     } finally {
       setSubmitting(false);
     }

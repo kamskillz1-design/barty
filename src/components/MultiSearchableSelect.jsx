@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Check, ChevronDown, X } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
-import { cn } from '@/lib/utils';
 
 /**
  * Searchable multi-select combobox. Lets the user pick several options from a

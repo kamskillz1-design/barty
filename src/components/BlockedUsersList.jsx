@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { ShieldX, Unlock } from 'lucide-react';
 import { resolveUsers } from '@/lib/userMeta';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 /**
  * BlockedUsersList — Settings section listing users the current user has
@@ -18,15 +19,30 @@ export default function BlockedUsersList() {
   const load = async () => {
     setLoading(true);
     try {
-      const recs = await base44.entities.UserBlock.filter({ active: true }, '-created_date', 100);
-      setBlocks(recs || []);
+      const { data, error } = await supabase
+        .from('user_blocks')
+        .select('*')
+        .eq('active', true)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        throw error;
+      }
+
+      const recs = withLegacyDatesList(data);
+      setBlocks(recs);
       const ids = [...new Set((recs || []).map((b) => b.blocked_id).filter(Boolean))];
       if (ids.length) {
         try {
           const { names } = await resolveUsers(ids);
           setNames(names);
-        } catch { /* keep placeholder */ }
+        } catch (error) {
+          console.error('Failed to resolve blocked user names:', error);
+        }
       }
+    } catch (error) {
+      console.error('Failed to load blocked users:', error);
     } finally {
       setLoading(false);
     }
@@ -36,9 +52,19 @@ export default function BlockedUsersList() {
 
   const unblock = async (b) => {
     try {
-      await base44.entities.UserBlock.update(b.id, { active: false, unblocked_date: new Date().toISOString() });
+      const { error } = await supabase
+        .from('user_blocks')
+        .update({ active: false, unblocked_date: new Date().toISOString() })
+        .eq('id', b.id);
+
+      if (error) {
+        throw error;
+      }
+
       setBlocks((cur) => cur.filter((x) => x.id !== b.id));
-    } catch { /* ignore */ }
+    } catch (error) {
+      console.error('Failed to unblock user:', error);
+    }
   };
 
   return (

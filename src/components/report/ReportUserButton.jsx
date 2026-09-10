@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Flag, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -26,18 +26,27 @@ export default function ReportUserButton({ userId, tradeId }) {
     e.preventDefault();
     setSending(true);
     try {
-      await base44.entities.UserReport.create({
+      const { error } = await supabase
+        .from('user_reports')
+        .insert({
         reported_user_id: userId,
         reporter_id: user.id,
         trade_id: tradeId || '',
         reason,
         note: note.trim(),
         status: 'open'
-      });
+        });
+
+      if (error) {
+        throw error;
+      }
+
       setOpen(false);
       setNote('');
       setReason('harassment');
       toast({ title: t.v2?.reportSent || 'Thank you — your report has been submitted for review.' });
+    } catch (error) {
+      console.error('Failed to submit user report:', error);
     } finally {
       setSending(false);
     }

@@ -4,7 +4,7 @@ import { ArrowLeftRight, Package, MapPin, User, Globe } from 'lucide-react';
 import moment from 'moment';
 import { useI18n } from '@/lib/i18n';
 import { Image } from '@/components/ui/image';
-import { EXCHANGE_TYPES, getCategory, subcatLabel, categoryLabel } from '@/lib/categories';
+import { EXCHANGE_TYPES, subcatLabel, categoryLabel } from '@/lib/categories';
 import OwnerBadges from '@/components/UserBadges';
 
 /**

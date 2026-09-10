@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { ShieldCheck } from 'lucide-react';
 
@@ -14,9 +14,21 @@ export default function SafeSpotSelector({ trade, onChange }) {
   useEffect(() => {
     (async () => {
       try {
-        const data = await base44.entities.SafeSpot.filter({ verified: true }, '-vote_count', 200);
+        const { data, error } = await supabase
+          .from('safe_spots')
+          .select('*')
+          .eq('verified', true)
+          .order('vote_count', { ascending: false })
+          .limit(200);
+
+        if (error) {
+          throw error;
+        }
+
         setSpots(data || []);
-      } catch { /* ignore */ }
+      } catch (error) {
+        console.error('Failed to load safe spots:', error);
+      }
     })();
   }, []);
 

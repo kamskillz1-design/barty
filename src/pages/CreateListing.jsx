@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import ListingForm from '@/components/ListingForm';
@@ -24,12 +24,19 @@ export default function CreateListing() {
   const handleCreate = async (data) => {
     setSaving(true);
     try {
-      await base44.entities.Listing.create({
+      const { error } = await supabase.from('listings').insert({
         ...data,
         status: 'available',
         offering_user_id: user.id
       });
+
+      if (error) {
+        throw error;
+      }
+
       navigate('/my-listings');
+    } catch (error) {
+      console.error('Failed to create listing:', error);
     } finally {
       setSaving(false);
     }

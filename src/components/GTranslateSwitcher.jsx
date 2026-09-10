@@ -3,7 +3,6 @@ import { Globe, ChevronDown } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from '@/components/ui/command';
 import { LANGUAGES } from '@/lib/i18n';
-import { cn } from '@/lib/utils';
 
 // Reads GTranslate's googtrans cookie; returns the target code ('' = English source).
 const readGoogTrans = () => {
