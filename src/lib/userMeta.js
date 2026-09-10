@@ -39,8 +39,10 @@ export async function resolveUsers(ids) {
   });
 
   (profiles || []).forEach((profile) => {
-    if (profile.full_name?.trim()) {
-      names[profile.id] = profile.full_name.trim();
+    const name = profile.full_name?.trim();
+
+    if (name) {
+      names[profile.id] = name;
     }
 
     if (profile.is_verified) {
