@@ -14,6 +14,8 @@ export default function CommentsSection({ listingId, listingOwnerId }) {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
+  const sortComments = (items) =>
+    [...items].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   const load = useCallback(async () => {
     try {
@@ -54,10 +56,14 @@ export default function CommentsSection({ listingId, listingOwnerId }) {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const comment = withLegacyDates(payload.new);
-            setComments((current) => [comment, ...current.filter((item) => item.id !== comment.id)]);
+            setComments((current) =>
+              sortComments([comment, ...current.filter((item) => item.id !== comment.id)])
+            );
           } else if (payload.eventType === 'UPDATE') {
             const comment = withLegacyDates(payload.new);
-            setComments((current) => current.map((item) => (item.id === comment.id ? comment : item)));
+            setComments((current) =>
+              sortComments(current.map((item) => (item.id === comment.id ? comment : item)))
+            );
           } else if (payload.eventType === 'DELETE') {
             setComments((current) => current.filter((item) => item.id !== payload.old?.id));
           }
@@ -92,7 +98,9 @@ export default function CommentsSection({ listingId, listingOwnerId }) {
       }
 
       const comment = withLegacyDates(data);
-      setComments((current) => [comment, ...current.filter((item) => item.id !== comment.id)]);
+      setComments((current) =>
+        sortComments([comment, ...current.filter((item) => item.id !== comment.id)])
+      );
       setText('');
       // Realtime subscription will prepend; ensure immediate for snappy UX
     } catch (error) {

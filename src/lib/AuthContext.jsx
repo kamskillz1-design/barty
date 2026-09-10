@@ -47,10 +47,10 @@ export const AuthProvider = ({ children }) => {
         "",
       role: profile?.role || "user",
       preferred_language: profile?.preferred_language || "en",
-      country: profile?.country || metadata.country || "",
-      city: profile?.city || metadata.city || "",
-      town: profile?.town || metadata.town || "",
-      avatar_url: profile?.avatar_url || metadata.avatar_url || "",
+      country: profile?.country || "",
+      city: profile?.city || "",
+      town: profile?.town || "",
+      avatar_url: profile?.avatar_url || "",
       bio: profile?.bio || "",
     };
   };
@@ -79,8 +79,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (currentUser) {
-        setUser(await enrichUser(currentUser));
+        const enrichedUser = await enrichUser(currentUser);
+        setUser(enrichedUser);
         setIsAuthenticated(true);
+        return enrichedUser;
       } else {
         setSignedOutState();
       }
@@ -152,7 +154,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoadingAuth(false);
     setAuthChecked(true);
 
-    return (await enrichUser(currentUser)) ?? null;
+    return null;
   };
 
   const checkAppState = () => checkUserAuth();

@@ -68,12 +68,26 @@ export default async function handler(req) {
     let hidden = false;
 
     if (reporterCount >= HIDE_THRESHOLD) {
-      const { error: updateError } = await admin
+      const { data: listing, error: listingError } = await admin
         .from("listings")
-        .update({ status: "hidden" })
-        .eq("id", listingId);
+        .select("status")
+        .eq("id", listingId)
+        .maybeSingle();
 
-      if (!updateError) {
+      if (listingError) {
+        throw listingError;
+      }
+
+      if (listing && !["hidden", "traded", "completed"].includes(listing.status)) {
+        const { error: updateError } = await admin
+          .from("listings")
+          .update({ status: "hidden" })
+          .eq("id", listingId);
+
+        if (updateError) {
+          throw updateError;
+        }
+
         hidden = true;
       }
     }

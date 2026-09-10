@@ -38,11 +38,21 @@ export async function uploadListingImage(file) {
     const { data } = supabase.storage.from(bucket).getPublicUrl(objectPath);
 
     if (data?.publicUrl) {
-      return {
-        file_url: data.publicUrl,
-        bucket,
-        path: objectPath,
-      };
+      try {
+        const response = await fetch(data.publicUrl, { method: "HEAD" });
+
+        if (response.ok) {
+          return {
+            file_url: data.publicUrl,
+            bucket,
+            path: objectPath,
+          };
+        }
+
+        failures.push(`${bucket}: public URL check returned ${response.status}`);
+      } catch (error) {
+        failures.push(`${bucket}: public URL check failed (${error.message})`);
+      }
     }
   }
 
