@@ -1,4 +1,4 @@
-import { base44 } from "@/api/base44Client";
+import { supabase } from '@/api/supabaseClient';
 
 export async function resolveUsers(ids) {
   const uniqueIds = [...new Set((ids || []).filter(Boolean))];
@@ -11,19 +11,19 @@ export async function resolveUsers(ids) {
     };
   }
 
-  const { data: profiles, error: profilesError } = await base44
-    .from("profiles")
-    .select("id, full_name, is_verified")
-    .in("id", uniqueIds);
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, full_name, is_verified')
+    .in('id', uniqueIds);
 
   if (profilesError) {
     throw profilesError;
   }
 
-  const { data: reviews, error: reviewsError } = await base44
-    .from("reviews")
-    .select("reviewee_id")
-    .in("reviewee_id", uniqueIds);
+  const { data: reviews, error: reviewsError } = await supabase
+    .from('reviews')
+    .select('reviewee_id')
+    .in('reviewee_id', uniqueIds);
 
   if (reviewsError) {
     throw reviewsError;
@@ -34,7 +34,7 @@ export async function resolveUsers(ids) {
   const verifiedIds = [];
 
   uniqueIds.forEach((id) => {
-    names[id] = "Barti member";
+    names[id] = 'Barti member';
     reviewCounts[id] = 0;
   });
 
