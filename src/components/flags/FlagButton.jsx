@@ -29,7 +29,7 @@ export default function FlagButton({ listingId, className = '' }) {
   const [already, setAlready] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const c = t.community?.flag || {};
+  const c = t?.community?.flag || {};
   const labels = c.reasons || {};
 
   const reset = () => {
@@ -50,6 +50,13 @@ export default function FlagButton({ listingId, className = '' }) {
 
   const submit = async () => {
     if (!reason || !listingId || !user) return;
+
+    if (!supabase) {
+      setErrorMessage(
+        c.error || 'Reporting is temporarily unavailable. Please try again later.'
+      );
+      return;
+    }
 
     setSubmitting(true);
     setErrorMessage('');
@@ -79,24 +86,29 @@ export default function FlagButton({ listingId, className = '' }) {
       console.error('Failed to submit listing flag:', error);
 
       setErrorMessage(
-        error.message || c.error || 'Unable to submit report. Please try again.'
+        error?.message ||
+          c.error ||
+          'Unable to submit report. Please try again.'
       );
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleReportClick = () => {
+    if (user) {
+      setOpen(true);
+      return;
+    }
+
+    window.location.href = '/login';
+  };
+
   return (
     <>
       <button
         type="button"
-        onClick={() => {
-          if (user) {
-            setOpen(true);
-          } else {
-            window.location.href = '/login';
-          }
-        }}
+        onClick={handleReportClick}
         title={c.button || 'Report'}
         className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-slate-400 transition hover:bg-slate-100 hover:text-rose-600 ${className}`}
       >
