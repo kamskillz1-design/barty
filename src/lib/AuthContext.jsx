@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { supabase } from '@/api/supabaseClient';
 
 const AuthContext = createContext(null);
@@ -12,140 +18,213 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings] = useState(null);
 
-  const setSignedOutState = () => {
+  const setSignedOutState = useCallback(() => {
     setUser(null);
     setIsAuthenticated(false);
-  };
+  }, []);
 
-  useEffect(() => {
-    let isMounted = true;
+  const applyUser = useCallback(
+    (nextUser) => {
+      if (nextUser) {
+        setUser(nextUser);
+        setIsAuthenticated(true);
+      } else {
+        setSignedOutState();
+      }
+    },
+    [setSignedOutState]
+  );
 
-    const initializeAuth = async () => {
-      setIsLoadingAuth(true);
-      setAuthError(null);
+  const checkUserAuth = useCallback(async () => {
+    setIsLoadingAuth(true);
+    setAuthError(null);
 
+    if (!supabase) {
+      setSignedOutState();
+      setAuthError({
+        type: 'configuration_error',
+        message: 'Authentication is temporarily unavailable.',
+      });
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
+      return null;
+    }
+
+    try {
       const {
         data: { user: currentUser },
         error,
       } = await supabase.auth.getUser();
 
-      if (!isMounted) return;
+      if (error && error.name !== 'AuthSessionMissingError') {
+        console.error('User auth check failed:', error);
 
-      // No session is normal for a visitor who has not logged in.
-      if (error && error.name !== "AuthSessionMissingError") {
-        console.error("User auth check failed:", error);
         setAuthError({
-          type: "auth_error",
-          message: "Unable to check sign-in status",
+          type: 'auth_error',
+          message: 'Unable to check sign-in status.',
         });
       }
 
-      if (currentUser) {
-        setUser(currentUser);
-        setIsAuthenticated(true);
-      } else {
-        setSignedOutState();
-      }
+      applyUser(currentUser || null);
+      return currentUser || null;
+    } catch (error) {
+      console.error('Unexpected auth check failure:', error);
 
+      setSignedOutState();
+      setAuthError({
+        type: 'auth_error',
+        message: 'Unable to check sign-in status.',
+      });
+
+      return null;
+    } finally {
       setIsLoadingAuth(false);
       setAuthChecked(true);
+    }
+  }, [applyUser, setSignedOutState]);
+
+  useEffect(() => {
+    let isMounted = true;
+    let subscription;
+
+    const initializeAuth = async () => {
+      if (!supabase) {
+        if (isMounted) {
+          setSignedOutState();
+          setAuthError({
+            type: 'configuration_error',
+            message: 'Authentication is temporarily unavailable.',
+          });
+          setIsLoadingAuth(false);
+          setAuthChecked(true);
+        }
+        return;
+      }
+
+      try {
+        const {
+          data: { user: currentUser },
+          error,
+        } = await supabase.auth.getUser();
+
+        if (!isMounted) return;
+
+        if (error && error.name !== 'AuthSessionMissingError') {
+          console.error('User auth check failed:', error);
+
+          setAuthError({
+            type: 'auth_error',
+            message: 'Unable to check sign-in status.',
+          });
+        }
+
+        applyUser(currentUser || null);
+      } catch (error) {
+        if (!isMounted) return;
+
+        console.error('Unexpected auth initialization failure:', error);
+
+        setSignedOutState();
+        setAuthError({
+          type: 'auth_error',
+          message: 'Unable to check sign-in status.',
+        });
+      } finally {
+        if (isMounted) {
+          setIsLoadingAuth(false);
+          setAuthChecked(true);
+        }
+      }
+
+      const {
+        data: { subscription: authSubscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!isMounted) return;
+
+        applyUser(session?.user || null);
+        setAuthError(null);
+        setIsLoadingAuth(false);
+        setAuthChecked(true);
+      });
+
+      subscription = authSubscription;
     };
 
     initializeAuth();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!isMounted) return;
-
-      const sessionUser = session?.user ?? null;
-      setUser(sessionUser);
-      setIsAuthenticated(Boolean(sessionUser));
-      setAuthError(null);
-      setIsLoadingAuth(false);
-      setAuthChecked(true);
-    });
-
     return () => {
       isMounted = false;
-      subscription.unsubscribe();
+
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
+  }, [applyUser, setSignedOutState]);
+
+  const checkAppState = useCallback(() => checkUserAuth(), [checkUserAuth]);
+
+  const logout = useCallback(
+    async (shouldRedirect = true) => {
+      if (!supabase) {
+        setSignedOutState();
+
+        return {
+          error: new Error('Authentication is temporarily unavailable.'),
+        };
+      }
+
+      try {
+        const { error } = await supabase.auth.signOut();
+
+        if (error) {
+          console.error('Logout failed:', error);
+          return { error };
+        }
+
+        setSignedOutState();
+        setAuthError(null);
+
+        if (shouldRedirect) {
+          window.location.assign('/Login');
+        }
+
+        return { error: null };
+      } catch (error) {
+        console.error('Logout failed:', error);
+        return { error };
+      }
+    },
+    [setSignedOutState]
+  );
+
+  const refreshUser = useCallback(async () => {
+    if (!supabase) {
+      setSignedOutState();
+      return null;
+    }
+
+    try {
+      const {
+        data: { user: currentUser },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error && error.name !== 'AuthSessionMissingError') {
+        console.error('Silent user refresh failed:', error);
+      }
+
+      applyUser(currentUser || null);
+      return currentUser || null;
+    } catch (error) {
+      console.error('Silent user refresh failed:', error);
+      setSignedOutState();
+      return null;
+    }
+  }, [applyUser, setSignedOutState]);
+
+  const navigateToLogin = useCallback(() => {
+    window.location.assign('/Login');
   }, []);
-
-  const checkUserAuth = async () => {
-    setIsLoadingAuth(true);
-    setAuthError(null);
-
-    const {
-      data: { user: currentUser },
-      error,
-    } = await supabase.auth.getUser();
-
-    // A missing session is expected before login.
-    if (error && error.name !== "AuthSessionMissingError") {
-      console.error("User auth check failed:", error);
-      setAuthError({
-        type: "auth_error",
-        message: "Unable to check sign-in status",
-      });
-    }
-
-    if (currentUser) {
-      setUser(currentUser);
-      setIsAuthenticated(true);
-    } else {
-      setSignedOutState();
-    }
-
-    setIsLoadingAuth(false);
-    setAuthChecked(true);
-
-    return currentUser ?? null;
-  };
-
-  const checkAppState = () => checkUserAuth();
-
-  const logout = async (shouldRedirect = true) => {
-    const { error } = await supabase.auth.signOut();
-
-    if (error) {
-      console.error("Logout failed:", error);
-      return { error };
-    }
-
-    setSignedOutState();
-    setAuthError(null);
-
-    if (shouldRedirect) {
-      window.location.assign("/Login");
-    }
-
-    return { error: null };
-  };
-
-  const refreshUser = async () => {
-    const {
-      data: { user: currentUser },
-      error,
-    } = await supabase.auth.getUser();
-
-    if (error && error.name !== "AuthSessionMissingError") {
-      console.error("Silent user refresh failed:", error);
-    }
-
-    if (currentUser) {
-      setUser(currentUser);
-      setIsAuthenticated(true);
-    } else {
-      setSignedOutState();
-    }
-
-    return currentUser ?? null;
-  };
-
-  const navigateToLogin = () => {
-    window.location.assign("/Login");
-  };
 
   return (
     <AuthContext.Provider
@@ -173,7 +252,7 @@ export const useAuth = () => {
   const context = useContext(AuthContext);
 
   if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
+    throw new Error('useAuth must be used within an AuthProvider');
   }
 
   return context;
