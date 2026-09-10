@@ -10,4 +10,10 @@ if (!supabaseUrl || !supabasePublishableKey) {
   );
 }
 
-export const base44 = createClient(supabaseUrl, supabasePublishableKey);
+export const supabase = createClient(
+  supabaseUrl,
+  supabasePublishableKey
+);
+
+// Temporary compatibility alias for files that still import `base44`.
+export const base44 = supabase;
