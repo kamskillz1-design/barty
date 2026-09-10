@@ -55,22 +55,7 @@ export default function FlagButton({ listingId, className = '' }) {
     setErrorMessage('');
 
     try {
-      const { data: existingFlag, error: checkError } = await supabase
-        .from('flags')
-        .select('id')
-        .eq('listing_id', listingId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (checkError) throw checkError;
-
-      if (existingFlag) {
-        setAlready(true);
-        setDone(true);
-        return;
-      }
-
-      const { error: insertError } = await supabase
+      const { error } = await supabase
         .from('flags')
         .insert({
           listing_id: listingId,
@@ -79,11 +64,20 @@ export default function FlagButton({ listingId, className = '' }) {
           note: note.trim() || null,
         });
 
-      if (insertError) throw insertError;
+      if (error) {
+        if (error.code === '23505') {
+          setAlready(true);
+          setDone(true);
+          return;
+        }
+
+        throw error;
+      }
 
       setDone(true);
     } catch (error) {
       console.error('Failed to submit listing flag:', error);
+
       setErrorMessage(
         error.message || c.error || 'Unable to submit report. Please try again.'
       );
@@ -117,6 +111,7 @@ export default function FlagButton({ listingId, className = '' }) {
               <ShieldAlert className="h-5 w-5 text-rose-500" />
               {c.title || 'Report this listing'}
             </DialogTitle>
+
             <DialogDescription>
               {c.subtitle || 'Tell us why this listing should be reviewed.'}
             </DialogDescription>
@@ -147,6 +142,7 @@ export default function FlagButton({ listingId, className = '' }) {
                     className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-slate-200 px-3 py-2.5 hover:bg-slate-50"
                   >
                     <RadioGroupItem value={item} id={`flag-${item}`} />
+
                     <Label
                       htmlFor={`flag-${item}`}
                       className="cursor-pointer text-sm font-medium text-slate-700"
@@ -178,7 +174,7 @@ export default function FlagButton({ listingId, className = '' }) {
                 type="button"
                 onClick={submit}
                 disabled={!reason || submitting}
-                className="inline-flex items-center gap-2 rounded-xl bg-rose-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-rose-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {submitting
                   ? c.submitting || 'Submitting…'
