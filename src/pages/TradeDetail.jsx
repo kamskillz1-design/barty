@@ -38,6 +38,9 @@ export default function TradeDetail() {
   const load = async () => {
     try {
       setLoading(true);
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
       const { data: tradeData, error: tradeError } = await supabase
         .from('trades')
         .select('*')
@@ -58,18 +61,23 @@ export default function TradeDetail() {
         return;
       }
 
-      const { data: messageData, error: messageError } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('trade_id', id)
-        .order('created_at', { ascending: true })
-        .limit(500);
+      const messageResponse = await fetch('/api/trade-messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(session?.access_token
+            ? { Authorization: 'Bearer ' + session.access_token }
+            : {})
+        },
+        body: JSON.stringify({ trade_id: id })
+      });
+      const messagePayload = await messageResponse.json().catch(() => ({}));
 
-      if (messageError) {
-        throw messageError;
+      if (!messageResponse.ok) {
+        throw new Error(messagePayload.error || 'Unable to load trade messages');
       }
 
-      setMessages(withLegacyDatesList(messageData));
+      setMessages(withLegacyDatesList(messagePayload.messages));
 
       if (user?.id) {
         const { data: reviewData, error: reviewError } = await supabase

@@ -47,8 +47,8 @@ export async function uploadListingImage(file) {
   }
 
   throw new Error(
-    `Image upload failed. Configure a public Supabase storage bucket named ${STORAGE_BUCKET_CANDIDATES.join(
+    `Image upload failed. Configure any one of these public Supabase storage buckets: ${STORAGE_BUCKET_CANDIDATES.join(
       ", "
-    )}. ${failures.join(" | ")}`
+    )}. Attempted buckets: ${failures.join(" | ")}`
   );
 }
