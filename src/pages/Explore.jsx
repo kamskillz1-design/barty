@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
-import { useI18n } from "@/lib/i18n";
-import { useAuth } from "@/lib/AuthContext";
-import BarterCard from "@/components/BarterCard";
-import SafetyBanner from "@/components/SafetyBanner";
-import SearchableSelect from "@/components/SearchableSelect";
-import { COUNTRIES } from "@/lib/geoData";
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/api/supabaseClient';
+import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
+import BarterCard from '@/components/BarterCard';
+import SafetyBanner from '@/components/SafetyBanner';
+import SearchableSelect from '@/components/SearchableSelect';
+import { COUNTRIES } from '@/lib/geoData';
 import {
   Search,
   Plus,
@@ -15,32 +15,36 @@ import {
   Globe2,
   Sparkles,
   SlidersHorizontal,
-} from "lucide-react";
-import GlobalImpactCounter from "@/components/GlobalImpactCounter";
-import LocalDiscovery from "@/components/LocalDiscovery";
-import SuggestedForYou from "@/components/explore/SuggestedForYou";
-import Leaderboard from "@/components/explore/Leaderboard";
-import OnboardingChecklist from "@/components/explore/OnboardingChecklist";
+} from 'lucide-react';
+import GlobalImpactCounter from '@/components/GlobalImpactCounter';
+import LocalDiscovery from '@/components/LocalDiscovery';
+import SuggestedForYou from '@/components/explore/SuggestedForYou';
+import Leaderboard from '@/components/explore/Leaderboard';
+import OnboardingChecklist from '@/components/explore/OnboardingChecklist';
 import {
   EXCHANGE_TYPES,
   categoriesForType,
   CATEGORY_TREE,
   OTHER_KEY,
-} from "@/lib/categories";
-import { filterAndRankListings } from "@/lib/exploreRanking";
-import { resolveUsers, buildUserMeta } from "@/lib/userMeta";
-import { getBlockerIds } from "@/lib/userBlocks";
-import useDetectedLocation from "@/hooks/useDetectedLocation";
+} from '@/lib/categories';
+import { filterAndRankListings } from '@/lib/exploreRanking';
+import { resolveUsers, buildUserMeta } from '@/lib/userMeta';
+import { getBlockerIds } from '@/lib/userBlocks';
+import useDetectedLocation from '@/hooks/useDetectedLocation';
 
 export default function Explore() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { user } = useAuth();
+
   const [listings, setListings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [q, setQ] = useState("");
-  const [exchType, setExchType] = useState("");
-  const [category, setCategory] = useState("");
+  const [q, setQ] = useState('');
+  const [exchType, setExchType] = useState('');
+  const [category, setCategory] = useState('');
+  const [ownerNames, setOwnerNames] = useState({});
+  const [ownerMeta, setOwnerMeta] = useState({});
+
   const {
     country: countryFilter,
     setCountry: setCountryFilter,
@@ -48,80 +52,99 @@ export default function Explore() {
     setTown: setTownFilter,
     coords: myCoords,
   } = useDetectedLocation();
-  const [ownerNames, setOwnerNames] = useState({});
-  const [ownerMeta, setOwnerMeta] = useState({});
 
   useEffect(() => {
     let isMounted = true;
 
     const loadListings = async () => {
+      if (!supabase) {
+        if (isMounted) {
+          setListings([]);
+          setOwnerNames({});
+          setOwnerMeta({});
+          setLoading(false);
+        }
+        return;
+      }
+
       setLoading(true);
 
       try {
-        const { data, error } = await base44
-          .from("listings")
-          .select("*")
-          .neq("status", "hidden")
-          .order("created_at", { ascending: false })
+        const { data, error } = await supabase
+          .from('listings')
+          .select('*')
+          .neq('status', 'hidden')
+          .order('created_at', { ascending: false })
           .limit(200);
 
         if (error) {
           throw error;
         }
 
-        let visible = data || [];
+        let visibleListings = data || [];
 
         if (user?.id) {
           try {
             const blockedOwners = await getBlockerIds(user.id);
 
-            if (blockedOwners.size) {
-              visible = visible.filter(
+            if (blockedOwners?.size) {
+              visibleListings = visibleListings.filter(
                 (listing) => !blockedOwners.has(listing.offering_user_id)
               );
             }
-          } catch {
-            // Continue without block filtering if the lookup fails.
+          } catch (error) {
+            console.error('Failed to filter blocked users:', error);
           }
         }
 
         if (!isMounted) return;
 
-        setListings(visible);
+        setListings(visibleListings);
 
-        const ids = [
+        const ownerIds = [
           ...new Set(
-            visible.map((listing) => listing.offering_user_id).filter(Boolean)
+            visibleListings
+              .map((listing) => listing.offering_user_id)
+              .filter(Boolean)
           ),
         ];
 
-        if (ids.length) {
-          try {
-            const { names, reviewCounts, verifiedIds } = await resolveUsers(
-              ids
-            );
+        if (ownerIds.length === 0) {
+          setOwnerNames({});
+          setOwnerMeta({});
+          return;
+        }
 
-            if (!isMounted) return;
+        try {
+          const { names, reviewCounts, verifiedIds } = await resolveUsers(
+            ownerIds
+          );
 
-            setOwnerNames(names);
-            setOwnerMeta(buildUserMeta(ids, { reviewCounts, verifiedIds }));
-          } catch {
-            if (!isMounted) return;
-            setOwnerNames({});
-            setOwnerMeta({});
-          }
-        } else {
+          if (!isMounted) return;
+
+          setOwnerNames(names);
+          setOwnerMeta(
+            buildUserMeta(ownerIds, {
+              reviewCounts,
+              verifiedIds,
+            })
+          );
+        } catch (error) {
+          console.error('Failed to load listing owners:', error);
+
+          if (!isMounted) return;
+
           setOwnerNames({});
           setOwnerMeta({});
         }
       } catch (error) {
-        console.error("Failed to load listings:", error);
+        console.error('Failed to load listings:', error);
 
-        if (isMounted) {
-          setListings([]);
-          setOwnerNames({});
-          setOwnerMeta({});
-        }
+        if (!isMounted) return;
+
+        setListings([]);
+        setOwnerNames({});
+        setOwnerMeta({});
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -157,7 +180,8 @@ export default function Explore() {
 
         <div className="relative max-w-2xl">
           <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5" /> {t.appName}
+            <Sparkles className="h-3.5 w-3.5" />
+            {t.appName}
           </div>
 
           <h1 className="mt-3 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
@@ -169,10 +193,12 @@ export default function Explore() {
           </p>
 
           <button
-            onClick={() => navigate("/listings/new")}
+            type="button"
+            onClick={() => navigate('/listings/new')}
             className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-sky-700 shadow-sm transition hover:bg-sky-50"
           >
-            <Plus className="h-4 w-4" /> {t.listing.new}
+            <Plus className="h-4 w-4" />
+            {t.listing.new}
           </button>
         </div>
       </section>
@@ -200,11 +226,13 @@ export default function Explore() {
       <SafetyBanner />
 
       <OnboardingChecklist />
+
       <SuggestedForYou
         listings={listings}
         ownerNames={ownerNames}
         ownerMeta={ownerMeta}
       />
+
       <Leaderboard />
 
       <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
@@ -215,6 +243,7 @@ export default function Explore() {
 
         <div className="relative">
           <Search className="absolute top-1/2 start-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
           <input
             value={q}
             onChange={(event) => setQ(event.target.value)}
@@ -228,13 +257,14 @@ export default function Explore() {
             value={exchType}
             onChange={(event) => {
               setExchType(event.target.value);
-              setCategory("");
+              setCategory('');
             }}
             className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400"
           >
             <option value="">
               {t.listing.exchangeType}: {t.search.allTypes}
             </option>
+
             {EXCHANGE_TYPES.map((type) => (
               <option key={type.id} value={type.id}>
                 {type.icon} {t.exchType[type.id]}
@@ -248,6 +278,7 @@ export default function Explore() {
             className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm outline-none focus:border-sky-400"
           >
             <option value="">{t.search.allCategories}</option>
+
             {(exchType
               ? categoriesForType(exchType)
               : CATEGORY_TREE
@@ -256,6 +287,7 @@ export default function Explore() {
                 {t.v1cat[item.id]}
               </option>
             ))}
+
             <option value={OTHER_KEY}>{t.listing.otherCategory}</option>
           </select>
 
@@ -310,6 +342,7 @@ function Feature({ icon: Icon, title, desc }) {
       </div>
 
       <h3 className="mt-3 font-semibold text-slate-900">{title}</h3>
+
       <p className="mt-1 text-sm leading-snug text-slate-500">{desc}</p>
     </div>
   );
