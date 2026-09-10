@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CalendarCheck, CalendarClock, Check } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 
