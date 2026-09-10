@@ -1,16 +1,21 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/api/base44Client";
 
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoadingAuth, setIsLoadingAuth] = useState(true);
-  const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
+  const [isLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [appPublicSettings, setAppPublicSettings] = useState(null);
+  const [appPublicSettings] = useState(null);
+
+  const setSignedOutState = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -19,56 +24,46 @@ export const AuthProvider = ({ children }) => {
       setIsLoadingAuth(true);
       setAuthError(null);
 
-      try {
-        const {
-          data: { user: currentUser },
-          error,
-        } = await base44.auth.getUser();
+      const {
+        data: { user: currentUser },
+        error,
+      } = await supabase.auth.getUser();
 
-        if (error) {
-          throw error;
-        }
+      if (!isMounted) return;
 
-        if (isMounted) {
-          setUser(currentUser);
-          setIsAuthenticated(Boolean(currentUser));
-        }
-      } catch (error) {
+      // No session is normal for a visitor who has not logged in.
+      if (error && error.name !== "AuthSessionMissingError") {
         console.error("User auth check failed:", error);
-
-        if (isMounted) {
-          setUser(null);
-          setIsAuthenticated(false);
-          setAuthError({
-            type: "auth_required",
-            message: "Authentication required",
-          });
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoadingAuth(false);
-          setAuthChecked(true);
-        }
+        setAuthError({
+          type: "auth_error",
+          message: "Unable to check sign-in status",
+        });
       }
+
+      if (currentUser) {
+        setUser(currentUser);
+        setIsAuthenticated(true);
+      } else {
+        setSignedOutState();
+      }
+
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
     };
 
     initializeAuth();
 
     const {
       data: { subscription },
-    } = base44.auth.onAuthStateChange((_event, session) => {
-      if (!isMounted) {
-        return;
-      }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
 
-      setUser(session?.user ?? null);
-      setIsAuthenticated(Boolean(session?.user));
+      const sessionUser = session?.user ?? null;
+      setUser(sessionUser);
+      setIsAuthenticated(Boolean(sessionUser));
+      setAuthError(null);
       setIsLoadingAuth(false);
       setAuthChecked(true);
-
-      if (session?.user) {
-        setAuthError(null);
-      }
     });
 
     return () => {
@@ -81,48 +76,44 @@ export const AuthProvider = ({ children }) => {
     setIsLoadingAuth(true);
     setAuthError(null);
 
-    try {
-      const {
-        data: { user: currentUser },
-        error,
-      } = await base44.auth.getUser();
+    const {
+      data: { user: currentUser },
+      error,
+    } = await supabase.auth.getUser();
 
-      if (error) {
-        throw error;
-      }
-
-      setUser(currentUser);
-      setIsAuthenticated(Boolean(currentUser));
-      return currentUser;
-    } catch (error) {
+    // A missing session is expected before login.
+    if (error && error.name !== "AuthSessionMissingError") {
       console.error("User auth check failed:", error);
-      setUser(null);
-      setIsAuthenticated(false);
       setAuthError({
-        type: "auth_required",
-        message: "Authentication required",
+        type: "auth_error",
+        message: "Unable to check sign-in status",
       });
-      return null;
-    } finally {
-      setIsLoadingAuth(false);
-      setAuthChecked(true);
     }
+
+    if (currentUser) {
+      setUser(currentUser);
+      setIsAuthenticated(true);
+    } else {
+      setSignedOutState();
+    }
+
+    setIsLoadingAuth(false);
+    setAuthChecked(true);
+
+    return currentUser ?? null;
   };
 
-  const checkAppState = async () => {
-    return checkUserAuth();
-  };
+  const checkAppState = () => checkUserAuth();
 
   const logout = async (shouldRedirect = true) => {
-    const { error } = await base44.auth.signOut();
+    const { error } = await supabase.auth.signOut();
 
     if (error) {
       console.error("Logout failed:", error);
       return { error };
     }
 
-    setUser(null);
-    setIsAuthenticated(false);
+    setSignedOutState();
     setAuthError(null);
 
     if (shouldRedirect) {
@@ -133,23 +124,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshUser = async () => {
-    try {
-      const {
-        data: { user: currentUser },
-        error,
-      } = await base44.auth.getUser();
+    const {
+      data: { user: currentUser },
+      error,
+    } = await supabase.auth.getUser();
 
-      if (error) {
-        throw error;
-      }
-
-      setUser(currentUser);
-      setIsAuthenticated(Boolean(currentUser));
-      return currentUser;
-    } catch (error) {
+    if (error && error.name !== "AuthSessionMissingError") {
       console.error("Silent user refresh failed:", error);
-      return null;
     }
+
+    if (currentUser) {
+      setUser(currentUser);
+      setIsAuthenticated(true);
+    } else {
+      setSignedOutState();
+    }
+
+    return currentUser ?? null;
   };
 
   const navigateToLogin = () => {
