@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowLeftRight, Printer, Copy, Check, MapPin } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import moment from 'moment';
+import { resolveUsers } from '@/lib/userMeta';
+import { withLegacyDates } from '@/lib/supabaseData';
 
 /**
  * TradeReceipt — shareable, printable summary of a completed trade: what was
@@ -25,16 +27,52 @@ export default function TradeReceipt() {
     if (!user) return;
     (async () => {
       try {
-        const tr = await base44.entities.Trade.get(id);
-        setTrade(tr);
-        try {
-          const res = await base44.functions.invoke('resolveUserNames', { ids: [tr.proposer_id, tr.receiver_id] });
-          setNames(res?.data?.names || res?.names || {});
-        } catch { /* generic labels */ }
-        if (tr.safe_spot_id) {
-          try { setSpot(await base44.entities.SafeSpot.get(tr.safe_spot_id)); } catch { /* spot removed */ }
+        const { data: tr, error: tradeError } = await supabase
+          .from('trades')
+          .select('*')
+          .eq('id', id)
+          .or(`proposer_id.eq.${user.id},receiver_id.eq.${user.id}`)
+          .maybeSingle();
+
+        if (tradeError) {
+          throw tradeError;
         }
-      } catch { /* not accessible */ }
+
+        const normalizedTrade = withLegacyDates(tr);
+        setTrade(normalizedTrade);
+
+        if (normalizedTrade) {
+          try {
+            const { names } = await resolveUsers([
+              normalizedTrade.proposer_id,
+              normalizedTrade.receiver_id
+            ]);
+            setNames(names || {});
+          } catch (error) {
+            console.error('Failed to resolve trade participant names:', error);
+          }
+        }
+
+        if (normalizedTrade?.safe_spot_id) {
+          try {
+            const { data: safeSpot, error: spotError } = await supabase
+              .from('safe_spots')
+              .select('*')
+              .eq('id', normalizedTrade.safe_spot_id)
+              .maybeSingle();
+
+            if (spotError) {
+              throw spotError;
+            }
+
+            setSpot(safeSpot || null);
+          } catch (error) {
+            console.error('Failed to load safe spot for receipt:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load trade receipt:', error);
+      }
       finally { setLoading(false); }
     })();
   }, [id, user]);

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { categoryLabel } from '@/lib/categories';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 export default function MyListings() {
   const { t } = useI18n();
@@ -15,8 +16,21 @@ export default function MyListings() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await base44.entities.Listing.filter({ offering_user_id: user.id }, '-created_date', 100);
-      setListings(data || []);
+      const { data, error } = await supabase
+        .from('listings')
+        .select('*')
+        .eq('offering_user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        throw error;
+      }
+
+      setListings(withLegacyDatesList(data));
+    } catch (error) {
+      console.error('Failed to load listings:', error);
+      setListings([]);
     } finally {
       setLoading(false);
     }
@@ -26,8 +40,20 @@ export default function MyListings() {
 
   const remove = async (id) => {
     if (!confirm('Delete this listing?')) return;
-    await base44.entities.Listing.delete(id);
-    load();
+    try {
+      const { error } = await supabase
+        .from('listings')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      load();
+    } catch (error) {
+      console.error('Failed to delete listing:', error);
+    }
   };
 
   if (loading) return <div className="py-20 text-center text-slate-400">{t.common.loading}</div>;

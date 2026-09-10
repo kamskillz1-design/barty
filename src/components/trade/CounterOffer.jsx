@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeftRight, Check, MessageSquare } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { notifyTradeEvent } from '@/lib/tradeNotifications';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 /**
  * CounterOffer — the receiver of a pending trade can counter by offering a
@@ -25,36 +26,70 @@ export default function CounterOffer({ trade, onDone }) {
     (async () => {
       try {
         // My own available listings, minus the one already requested in the trade.
-        const mine = await base44.entities.Listing.filter({ offering_user_id: user.id, status: 'available' }, '-created_date', 100);
-        setMyListings((mine || []).filter((m) => m.id !== trade.requested_listing_id));
-      } catch { /* none selectable */ }
+        const { data, error } = await supabase
+          .from('listings')
+          .select('*')
+          .eq('offering_user_id', user.id)
+          .eq('status', 'available')
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (error) {
+          throw error;
+        }
+
+        setMyListings(
+          withLegacyDatesList(data).filter((m) => m.id !== trade.requested_listing_id)
+        );
+      } catch (error) {
+        console.error('Failed to load counter-offer listings:', error);
+      }
     })();
   }, [open, user, trade.requested_listing_id]);
 
   const submit = async () => {
-    if (!selected) return;
+    const sel = myListings.find((m) => m.id === selected);
+    if (!sel) return;
+
     setSending(true);
     try {
-      const sel = myListings.find((m) => m.id === selected);
-      await base44.entities.Trade.update(trade.id, {
+
+      const { error: tradeError } = await supabase
+        .from('trades')
+        .update({
         counter_listing_id: sel.id,
         counter_listing_title: sel.title,
         counter_listing_value: sel.baseline_value,
         counter_message: message.trim(),
         counter_proposed_by_id: user.id
-      });
-      await base44.entities.Message.create({
+        })
+        .eq('id', trade.id);
+
+      if (tradeError) {
+        throw tradeError;
+      }
+
+      const { error: messageError } = await supabase
+        .from('messages')
+        .insert({
         trade_id: trade.id,
         sender_id: user.id,
         kind: 'system',
         text: `Counter-offer: ${sel.title}`
-      });
+        });
+
+      if (messageError) {
+        throw messageError;
+      }
+
       // Notify the proposer by email (non-blocking for the UI).
       notifyTradeEvent(trade.id, 'counter');
       setOpen(false);
       setSelected(null);
       setMessage('');
       onDone && onDone();
+    } catch (error) {
+      console.error('Failed to submit counter-offer:', error);
     } finally {
       setSending(false);
     }

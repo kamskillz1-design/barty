@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 
 const translations = {
   en: {
@@ -108,9 +107,9 @@ const translations = {
 // Languages written right-to-left; everything else is treated as LTR.
 const RTL_CODES = new Set(['ar', 'he', 'fa', 'ur', 'ps', 'sd', 'yi', 'dv', 'ug', 'ks']);
 
-// Comprehensive list of UI languages (ISO 639-1 codes). Any code here can be
-// selected; when a static translation dictionary does not exist, the provider
-// auto-generates (and caches) one via the LLM, so the whole UI localizes.
+// Comprehensive list of UI languages (ISO 639-1 codes). The app currently ships
+// static dictionaries for a subset of these languages and safely falls back to
+// English for the rest until a server-side translation workflow is introduced.
 const UI_LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'es', label: 'Spanish' },
@@ -265,75 +264,29 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
   };
 
   const setLang = async (code) => {
-    // App UI is pinned to English as the GTranslate source language; GTranslate
-    // owns all user-facing translation. Ignore non-English selections.
-    if (code !== 'en') return;
-    setLangState(code);
-    try { localStorage.setItem(LANG_PREF_KEY, code); } catch { /* storage blocked */ }
-    if (translations[code]) { applyLang(code, translations[code]); return; }
-    const cacheKey = `barti_i18n_${code}`;
-    try {
-      const cachedRaw = localStorage.getItem(cacheKey);
-      const cached = cachedRaw ? JSON.parse(cachedRaw) : null;
-      if (cached && Object.keys(cached).length > 5 && typeof cached.appName === 'string') { applyLang(code, cached); return; }
-    } catch { /* ignore malformed cache */ }
-    setTranslating(true);
-    const langName = LANGUAGES_BY_CODE[code]?.label || code;
-    // Split the dictionary into small chunks and translate them in parallel.
-    // Each call is tiny so a large script (e.g. Bengali) can't truncate, a single
-    // hanging call is capped by a timeout instead of freezing the whole switch,
-    // and the total wall-time is one round-trip, not five sequential ones.
-    const CHUNKS = [
-      ['appName', 'nav', 'local', 'impact'],
-      ['hubs', 'search', 'categories'],
-      ['listing', 'exchType', 'exchLoc', 'v1cat'],
-      ['v1sub'],
-      ['tags', 'trade', 'call', 'value', 'safety', 'profile', 'common', 'landing']
-    ];
-    const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
-    const parsePart = (res) => {
-      let raw = typeof res === 'string' ? res.trim() : (res && typeof res === 'object' ? JSON.stringify(res) : '');
-      raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-      const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
-      if (s !== -1 && e > s) raw = raw.slice(s, e + 1);
-      let part = {};
-      try { part = raw ? JSON.parse(raw) : {}; } catch { part = {}; }
-      return (part && typeof part === 'object' && !Array.isArray(part)) ? part : {};
-    };
-    try {
-      const results = await Promise.allSettled(CHUNKS.map(async (keys) => {
-        const sub = {};
-        for (const k of keys) sub[k] = translations.en[k];
-        const res = await withTimeout(base44.integrations.Core.InvokeLLM({
-          prompt: `You are a professional UI localizer. Translate the user-facing strings in the JSON below into ${langName} (language code "${code}"). Return ONLY a raw JSON object (no markdown, no code fences, no commentary) with the EXACT same structure and the same keys. Translate every human-readable value; keep object keys and enum-like codes verbatim. JSON:\n${JSON.stringify(sub)}`,
-          model: 'gpt_5_mini'
-        }), 20000);
-        return { keys, part: parsePart(res) };
-      }));
-      const merged = {};
-      let okCount = 0;
-      for (const r of results) {
-        if (r.status !== 'fulfilled' || !r.value) continue;
-        const { keys, part } = r.value;
-        for (const k of keys) if (part[k] !== undefined) merged[k] = part[k];
-        okCount++;
-      }
-      const isValid = okCount > 0 && typeof merged.appName === 'string';
-      // Only cache a full-ish translation so a failed attempt retries next load.
-      if (isValid) { try { localStorage.setItem(cacheKey, JSON.stringify(merged)); } catch { /* storage full */ } }
-      applyLang(code, isValid ? merged : {});
-    } finally {
-      setTranslating(false);
+    const nextCode = translations[code] ? code : 'en';
+    if (nextCode !== code) {
+      console.warn(
+        `Unsupported UI language "${code}". Falling back to English until a static translation is added.`
+      );
     }
+    setLangState(nextCode);
+    try { localStorage.setItem(LANG_PREF_KEY, nextCode); } catch { /* storage blocked */ }
+    applyLang(nextCode, translations[nextCode]);
   };
 
-  // On mount, clear any stale non-English UI preference so the base UI always
-  // renders in English (the GTranslate source language). GTranslate owns all
-  // user-facing translation from there.
   useEffect(() => {
-    try { localStorage.removeItem(LANG_PREF_KEY); } catch { /* ignore */ }
+    const stored = readStoredLang() || initialLang;
+    const nextCode = translations[stored] ? stored : 'en';
+
+    if (stored && nextCode !== stored) {
+      try { localStorage.removeItem(LANG_PREF_KEY); } catch { /* ignore */ }
+    }
+
+    setLangState(nextCode);
+    applyLang(nextCode, translations[nextCode]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialLang]);
 
   return (
     <I18nContext.Provider value={{ lang, setLang, t, dir, translating }}>

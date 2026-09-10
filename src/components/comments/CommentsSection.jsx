@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
-import { MessageSquare, Send, Pencil, Trash2, X, Check } from 'lucide-react';
+import { MessageSquare, Send } from 'lucide-react';
 import CommentItem from '@/components/comments/CommentItem';
+import { withLegacyDates, withLegacyDatesList } from '@/lib/supabaseData';
 
 export default function CommentsSection({ listingId, listingOwnerId }) {
   const { t } = useI18n();
@@ -13,11 +14,26 @@ export default function CommentsSection({ listingId, listingOwnerId }) {
   const [loading, setLoading] = useState(true);
   const [text, setText] = useState('');
   const [posting, setPosting] = useState(false);
+  const sortComments = (items) =>
+    [...items].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   const load = useCallback(async () => {
     try {
-      const data = await base44.entities.Comment.filter({ listing_id: listingId }, '-created_date', 100);
-      setComments(data || []);
+      const { data, error } = await supabase
+        .from('comments')
+        .select('*')
+        .eq('listing_id', listingId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        throw error;
+      }
+
+      setComments(withLegacyDatesList(data));
+    } catch (error) {
+      console.error('Failed to load comments:', error);
+      setComments([]);
     } finally {
       setLoading(false);
     }
@@ -27,13 +43,37 @@ export default function CommentsSection({ listingId, listingOwnerId }) {
 
   useEffect(() => {
     if (!listingId) return;
-    const unsub = base44.entities.Comment.subscribe((event) => {
-      const ev = event?.type;
-      if (ev === 'create') setComments((c) => event.data ? [event.data, ...c.filter((x) => x.id !== event.data.id)] : c);
-      else if (ev === 'update') setComments((c) => c.map((x) => x.id === event.data?.id ? event.data : x));
-      else if (ev === 'delete') setComments((c) => c.filter((x) => x.id !== event?.data?.id));
-    });
-    return () => { unsub && unsub(); };
+    const channel = supabase
+      .channel(`comments-${listingId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comments',
+          filter: `listing_id=eq.${listingId}`
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const comment = withLegacyDates(payload.new);
+            setComments((current) =>
+              sortComments([comment, ...current.filter((item) => item.id !== comment.id)])
+            );
+          } else if (payload.eventType === 'UPDATE') {
+            const comment = withLegacyDates(payload.new);
+            setComments((current) =>
+              sortComments(current.map((item) => (item.id === comment.id ? comment : item)))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setComments((current) => current.filter((item) => item.id !== payload.old?.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [listingId]);
 
   const submit = async () => {
@@ -41,15 +81,30 @@ export default function CommentsSection({ listingId, listingOwnerId }) {
     if (!body || !user) return;
     setPosting(true);
     try {
-      await base44.entities.Comment.create({
+      const { data, error } = await supabase
+        .from('comments')
+        .insert({
         listing_id: listingId,
         author_id: user.id,
         author_name: user.full_name || 'User',
         body,
         edited: false
-      });
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      const comment = withLegacyDates(data);
+      setComments((current) =>
+        sortComments([comment, ...current.filter((item) => item.id !== comment.id)])
+      );
       setText('');
       // Realtime subscription will prepend; ensure immediate for snappy UX
+    } catch (error) {
+      console.error('Failed to post comment:', error);
     } finally {
       setPosting(false);
     }
@@ -57,14 +112,49 @@ export default function CommentsSection({ listingId, listingOwnerId }) {
 
   const onDelete = async (id) => {
     try {
-      await base44.functions.invoke('deleteComment', { comment_id: id });
+      const {
+        data: { session }
+      } = await supabase.auth.getSession();
+      const response = await fetch('/api/delete-comment', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(session?.access_token
+            ? { Authorization: 'Bearer ' + session.access_token }
+            : {})
+        },
+        body: JSON.stringify({ comment_id: id })
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to delete comment');
+      }
+
       setComments((c) => c.filter((x) => x.id !== id));
-    } catch { /* RLS/backend reports forbidden as error */ }
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+    }
   };
 
   const onEdit = async (id, newBody) => {
-    await base44.entities.Comment.update(id, { body: newBody, edited: true });
-    setComments((c) => c.map((x) => x.id === id ? { ...x, body: newBody, edited: true } : x));
+    try {
+      const { data, error } = await supabase
+        .from('comments')
+        .update({ body: newBody, edited: true })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      const updated = withLegacyDates(data);
+      setComments((c) => c.map((x) => x.id === id ? updated : x));
+    } catch (error) {
+      console.error('Failed to edit comment:', error);
+    }
   };
 
   const canManage = (c) => user && (c.author_id === user.id || c.created_by_id === user.id || listingOwnerId === user.id || user.role === 'admin');

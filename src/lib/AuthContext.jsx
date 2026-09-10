@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { supabase } from "@/api/base44Client";
 
 const AuthContext = createContext(null);
@@ -11,10 +11,48 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings] = useState(null);
+  const authEventRequestRef = useRef(0);
 
   const setSignedOutState = () => {
     setUser(null);
     setIsAuthenticated(false);
+  };
+
+  const enrichUser = async (authUser) => {
+    if (!authUser) {
+      return null;
+    }
+
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select(
+        "full_name, role, preferred_language, country, city, town, avatar_url, bio"
+      )
+      .eq("id", authUser.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Failed to load user profile:", error);
+    }
+
+    const metadata = authUser.user_metadata || {};
+
+    return {
+      ...authUser,
+      full_name:
+        profile?.full_name ||
+        metadata.full_name ||
+        metadata.name ||
+        authUser.email?.split("@")[0] ||
+        "",
+      role: profile?.role || "user",
+      preferred_language: profile?.preferred_language || "en",
+      country: profile?.country || "",
+      city: profile?.city || "",
+      town: profile?.town || "",
+      avatar_url: profile?.avatar_url || "",
+      bio: profile?.bio || "",
+    };
   };
 
   useEffect(() => {
@@ -41,8 +79,10 @@ export const AuthProvider = ({ children }) => {
       }
 
       if (currentUser) {
-        setUser(currentUser);
+        const enrichedUser = await enrichUser(currentUser);
+        setUser(enrichedUser);
         setIsAuthenticated(true);
+        return enrichedUser;
       } else {
         setSignedOutState();
       }
@@ -59,11 +99,25 @@ export const AuthProvider = ({ children }) => {
       if (!isMounted) return;
 
       const sessionUser = session?.user ?? null;
-      setUser(sessionUser);
       setIsAuthenticated(Boolean(sessionUser));
       setAuthError(null);
       setIsLoadingAuth(false);
       setAuthChecked(true);
+
+      if (!sessionUser) {
+        setUser(null);
+        return;
+      }
+
+      const requestId = ++authEventRequestRef.current;
+
+      void enrichUser(sessionUser).then((enrichedUser) => {
+        if (!isMounted || authEventRequestRef.current !== requestId) {
+          return;
+        }
+
+        setUser(enrichedUser);
+      });
     });
 
     return () => {
@@ -91,7 +145,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (currentUser) {
-      setUser(currentUser);
+      setUser(await enrichUser(currentUser));
       setIsAuthenticated(true);
     } else {
       setSignedOutState();
@@ -100,7 +154,7 @@ export const AuthProvider = ({ children }) => {
     setIsLoadingAuth(false);
     setAuthChecked(true);
 
-    return currentUser ?? null;
+    return null;
   };
 
   const checkAppState = () => checkUserAuth();
@@ -134,13 +188,15 @@ export const AuthProvider = ({ children }) => {
     }
 
     if (currentUser) {
-      setUser(currentUser);
+      const enrichedUser = await enrichUser(currentUser);
+      setUser(enrichedUser);
       setIsAuthenticated(true);
+      return enrichedUser;
     } else {
       setSignedOutState();
     }
 
-    return currentUser ?? null;
+    return null;
   };
 
   const navigateToLogin = () => {

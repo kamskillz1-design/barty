@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Bookmark, MapPin, X } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { Bookmark, X } from 'lucide-react';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 import { Image } from '@/components/ui/image';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 /**
  * SavedListings — Profile section listing everything the user hearted, with a
@@ -12,25 +14,59 @@ import { Image } from '@/components/ui/image';
  */
 export default function SavedListings() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [saved, setSaved] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user?.id) {
+      setSaved([]);
+      setLoading(false);
+      return undefined;
+    }
+
     let alive = true;
     (async () => {
       try {
-        const recs = await base44.entities.SavedListing.list('-created_date', 100);
-        if (alive) setSaved(recs || []);
-      } catch { /* ignore */ }
+        const { data, error } = await supabase
+          .from('saved_listings')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (error) {
+          throw error;
+        }
+
+        if (alive) setSaved(withLegacyDatesList(data));
+      } catch (error) {
+        console.error('Failed to load saved listings:', error);
+      }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, []);
+  }, [user?.id]);
 
   const remove = async (rec) => {
+    const previous = saved;
     setSaved((cur) => cur.filter((r) => r.id !== rec.id));
-    try { await base44.entities.SavedListing.delete(rec.id); } catch { /* removed elsewhere */ }
+    try {
+      const { error } = await supabase
+        .from('saved_listings')
+        .delete()
+        .eq('id', rec.id);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Failed to remove saved listing:', error);
+      setSaved(previous);
+    }
   };
+
+  if (!user) return null;
 
   return (
     <div>

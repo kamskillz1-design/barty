@@ -1,4 +1,4 @@
-import { base44 } from "@/api/base44Client";
+import { supabase } from "@/api/base44Client";
 
 export async function resolveUsers(ids) {
   const uniqueIds = [...new Set((ids || []).filter(Boolean))];
@@ -11,22 +11,32 @@ export async function resolveUsers(ids) {
     };
   }
 
-  const { data: profiles, error: profilesError } = await base44
+  const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
-    .select("id, full_name, is_verified")
+    .select("id, full_name")
     .in("id", uniqueIds);
 
   if (profilesError) {
     throw profilesError;
   }
 
-  const { data: reviews, error: reviewsError } = await base44
+  const { data: reviews, error: reviewsError } = await supabase
     .from("reviews")
     .select("reviewee_id")
     .in("reviewee_id", uniqueIds);
 
   if (reviewsError) {
     throw reviewsError;
+  }
+
+  const { data: verificationRequests, error: verificationError } = await supabase
+    .from("verification_requests")
+    .select("user_id")
+    .eq("status", "approved")
+    .in("user_id", uniqueIds);
+
+  if (verificationError) {
+    throw verificationError;
   }
 
   const names = {};
@@ -45,15 +55,18 @@ export async function resolveUsers(ids) {
       names[profile.id] = name;
     }
 
-    if (profile.is_verified) {
-      verifiedIds.push(profile.id);
-    }
   });
 
   (reviews || []).forEach((review) => {
     if (review.reviewee_id) {
       reviewCounts[review.reviewee_id] =
         (reviewCounts[review.reviewee_id] || 0) + 1;
+    }
+  });
+
+  (verificationRequests || []).forEach((request) => {
+    if (request.user_id) {
+      verifiedIds.push(request.user_id);
     }
   });
 

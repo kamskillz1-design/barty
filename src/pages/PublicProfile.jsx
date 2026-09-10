@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { Star, MapPin, Package, ShieldX, Unlock } from 'lucide-react';
 import { Image } from '@/components/ui/image';
-import { EXCHANGE_TYPES, categoryLabel, subcatLabel } from '@/lib/categories';
+import { categoryLabel, subcatLabel } from '@/lib/categories';
 import ReviewsList from '@/components/reviews/ReviewsList';
 import ReportUserButton from '@/components/report/ReportUserButton';
 import { VerifiedBadge } from '@/components/UserBadges';
 import { getBlockState, blockUser as blockUserOp, unblockUser as unblockUserOp } from '@/lib/userBlocks';
+import { resolveUsers } from '@/lib/userMeta';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 export default function PublicProfile() {
   const { id } = useParams();
@@ -29,17 +31,72 @@ export default function PublicProfile() {
     (async () => {
       try {
         try {
-          const res = await base44.functions.invoke('getUserProfile', { id });
-          setUser(res?.data?.user || res?.user || null);
-        } catch {}
-        const mine = await base44.entities.Listing.filter({ offering_user_id: id, status: 'available' }, '-created_date', 50);
-        setListings(mine || []);
-        const revs = await base44.entities.Review.filter({ reviewee_id: id }, '-created_date', 50);
-        setReviews(revs || []);
-        try {
-          const vr = await base44.entities.VerificationRequest.filter({ user_id: id, status: 'approved' });
-          setVerified((vr || []).length > 0);
-        } catch { /* verification unknown — hide badge */ }
+          const [{ data: profile, error: profileError }, { data: mine, error: listingsError }, { data: revs, error: reviewsError }, { data: vr, error: verificationError }, nameData] = await Promise.all([
+            supabase
+              .from('profiles')
+              .select('id, full_name, city, country, bio')
+              .eq('id', id)
+              .maybeSingle(),
+            supabase
+              .from('listings')
+              .select('*')
+              .eq('offering_user_id', id)
+              .eq('status', 'available')
+              .order('created_at', { ascending: false })
+              .limit(50),
+            supabase
+              .from('reviews')
+              .select('*')
+              .eq('reviewee_id', id)
+              .order('created_at', { ascending: false })
+              .limit(50),
+            supabase
+              .from('verification_requests')
+              .select('id')
+              .eq('user_id', id)
+              .eq('status', 'approved')
+              .limit(1)
+              .maybeSingle(),
+            resolveUsers([id]).catch(() => ({ names: {} }))
+          ]);
+
+          if (profileError) {
+            throw profileError;
+          }
+
+          if (listingsError) {
+            throw listingsError;
+          }
+
+          if (reviewsError) {
+            throw reviewsError;
+          }
+
+          if (verificationError) {
+            throw verificationError;
+          }
+
+          const fallbackName = nameData.names[id] || '';
+          setUser(
+            profile
+              ? { ...profile, full_name: profile.full_name || fallbackName }
+              : (fallbackName || mine?.length || revs?.length || vr
+                ? {
+                    id,
+                    full_name: fallbackName,
+                    city: '',
+                    country: '',
+                    bio: ''
+                  }
+                : null)
+          );
+          setListings(withLegacyDatesList(mine));
+          setReviews(withLegacyDatesList(revs));
+          setVerified(Boolean(vr));
+        } catch (error) {
+          console.error('Failed to load public profile:', error);
+        }
+
         if (viewer?.id && viewer.id !== id) {
           try {
             const state = await getBlockState(viewer.id, id);
@@ -51,7 +108,7 @@ export default function PublicProfile() {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, viewer?.id]);
 
   const c = t.community?.reviews || {};
   const avg = reviews.length ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1) : null;

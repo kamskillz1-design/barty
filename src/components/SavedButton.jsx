@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Heart } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 
 /**
@@ -18,9 +18,21 @@ export default function SavedButton({ listing }) {
     (async () => {
       try {
         // RLS scopes reads to my own records, so this finds my save only.
-        const recs = await base44.entities.SavedListing.filter({ listing_id: listing.id });
-        if (alive) setSavedRec((recs || [])[0] || null);
-      } catch { /* unreadable — default to unsaved */ }
+        const { data, error } = await supabase
+          .from('saved_listings')
+          .select('*')
+          .eq('listing_id', listing.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (error) {
+          throw error;
+        }
+
+        if (alive) setSavedRec(data || null);
+      } catch (error) {
+        console.error('Failed to load saved listing state:', error);
+      }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
@@ -30,17 +42,36 @@ export default function SavedButton({ listing }) {
     setBusy(true);
     try {
       if (savedRec) {
-        await base44.entities.SavedListing.delete(savedRec.id);
+        const { error } = await supabase
+          .from('saved_listings')
+          .delete()
+          .eq('id', savedRec.id);
+
+        if (error) {
+          throw error;
+        }
+
         setSavedRec(null);
       } else {
-        const rec = await base44.entities.SavedListing.create({
+        const { data, error } = await supabase
+          .from('saved_listings')
+          .insert({
           listing_id: listing.id,
           listing_title: listing.title || '',
           listing_image_url: (listing.image_urls || [])[0] || '',
           owner_id: listing.offering_user_id || ''
-        });
-        setSavedRec(rec);
+          })
+          .select()
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        setSavedRec(data);
       }
+    } catch (error) {
+      console.error('Failed to toggle saved listing:', error);
     } finally {
       setBusy(false);
     }

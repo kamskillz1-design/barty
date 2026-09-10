@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import SearchableSelect from '@/components/SearchableSelect';
@@ -12,6 +12,7 @@ import VerificationCard from '@/components/VerificationCard';
 import NotificationPrefs from '@/components/NotificationPrefs';
 import { COUNTRIES } from '@/lib/geoData';
 import { Star, Plus, MapPin } from 'lucide-react';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 export default function Profile() {
   const { t, lang, setLang } = useI18n();
@@ -34,10 +35,37 @@ export default function Profile() {
       avatar_url: user.avatar_url || ''
     });
     (async () => {
-      const mine = await base44.entities.Listing.filter({ offering_user_id: user.id }, '-created_date', 100);
-      setListings(mine || []);
-      const revs = await base44.entities.Review.filter({ reviewee_id: user.id }, '-created_date', 50);
-      setReviews(revs || []);
+      try {
+        const [{ data: mine, error: listingsError }, { data: revs, error: reviewsError }] = await Promise.all([
+          supabase
+            .from('listings')
+            .select('*')
+            .eq('offering_user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(100),
+          supabase
+            .from('reviews')
+            .select('*')
+            .eq('reviewee_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(50)
+        ]);
+
+        if (listingsError) {
+          throw listingsError;
+        }
+
+        if (reviewsError) {
+          throw reviewsError;
+        }
+
+        setListings(withLegacyDatesList(mine));
+        setReviews(withLegacyDatesList(revs));
+      } catch (error) {
+        console.error('Failed to load profile data:', error);
+        setListings([]);
+        setReviews([]);
+      }
     })();
   }, [user]);
 
@@ -47,14 +75,27 @@ export default function Profile() {
     setSaving(true);
     setSaveErr('');
     try {
-      await base44.auth.updateMe(form);
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          ...form
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
       setLang(form.preferred_language);
       // Refresh the shared auth context so the saved values reflect
       // everywhere immediately (own profile, listings owner cache, etc.).
       await refreshUser();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
+    } catch (error) {
+      console.error('Failed to save profile:', error);
       setSaveErr(t.profile.saveError);
     } finally {
       setSaving(false);

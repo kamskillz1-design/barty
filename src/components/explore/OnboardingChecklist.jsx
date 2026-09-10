@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Circle, Rocket } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 
@@ -22,13 +22,34 @@ export default function OnboardingChecklist() {
     let alive = true;
     (async () => {
       try {
-        const mine = await base44.entities.Listing.filter({ offering_user_id: user.id }, '-created_date', 1);
-        if (alive) setHasListing((mine || []).length > 0);
-      } catch { /* treat as no listing */ }
+        const { data, error } = await supabase
+          .from('listings')
+          .select('id')
+          .eq('offering_user_id', user.id)
+          .limit(1);
+
+        if (error) {
+          throw error;
+        }
+
+        if (alive) setHasListing((data || []).length > 0);
+      } catch (error) {
+        console.error('Failed to load onboarding listings state:', error);
+      }
       try {
-        const vr = await base44.entities.VerificationRequest.filter({ user_id: user.id });
-        if (alive) setHasVerification((vr || []).some((r) => r.status === 'pending' || r.status === 'approved'));
-      } catch { /* treat as not requested */ }
+        const { data, error } = await supabase
+          .from('verification_requests')
+          .select('status')
+          .eq('user_id', user.id);
+
+        if (error) {
+          throw error;
+        }
+
+        if (alive) setHasVerification((data || []).some((r) => r.status === 'pending' || r.status === 'approved'));
+      } catch (error) {
+        console.error('Failed to load onboarding verification state:', error);
+      }
       if (alive) setLoading(false);
     })();
     return () => { alive = false; };

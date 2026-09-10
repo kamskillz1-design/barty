@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { Globe2, Activity } from 'lucide-react';
 
@@ -13,15 +13,35 @@ export default function GlobalImpactCounter() {
 
   const refresh = async () => {
     try {
-      const traded = await base44.entities.Listing.filter({ status: 'traded' }, '-created_date', 1000);
-      setCount((traded || []).length);
-    } catch { /* ignore */ }
+      const { count, error } = await supabase
+        .from('listings')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'traded');
+
+      if (error) {
+        throw error;
+      }
+
+      setCount(count || 0);
+    } catch (error) {
+      console.error('Failed to refresh global impact counter:', error);
+    }
   };
 
   useEffect(() => {
     refresh();
-    const unsub = base44.entities.Listing.subscribe(() => refresh());
-    return unsub;
+    const channel = supabase
+      .channel('global-impact-counter')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'listings' },
+        () => refresh()
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, []);
 
   return (

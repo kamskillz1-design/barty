@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BadgeCheck, ShieldCheck, Clock } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { VerifiedBadge } from '@/components/UserBadges';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 /**
  * VerificationCard — Profile section to request the optional verified badge.
@@ -22,9 +23,21 @@ export default function VerificationCard() {
     let alive = true;
     (async () => {
       try {
-        const recs = await base44.entities.VerificationRequest.filter({ user_id: user.id }, '-created_date', 5);
-        if (alive) setRequest((recs || [])[0] || null);
-      } catch { /* none */ }
+        const { data, error } = await supabase
+          .from('verification_requests')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) {
+          throw error;
+        }
+
+        if (alive) setRequest(withLegacyDatesList(data)[0] || null);
+      } catch (error) {
+        console.error('Failed to load verification requests:', error);
+      }
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
@@ -33,12 +46,23 @@ export default function VerificationCard() {
   const requestVerification = async () => {
     setBusy(true);
     try {
-      const rec = await base44.entities.VerificationRequest.create({
+      const { data, error } = await supabase
+        .from('verification_requests')
+        .insert({
         user_id: user.id,
         method: 'email',
         status: 'pending'
-      });
-      setRequest(rec);
+        })
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      setRequest(withLegacyDatesList([data])[0] || data);
+    } catch (error) {
+      console.error('Failed to request verification:', error);
     } finally {
       setBusy(false);
     }

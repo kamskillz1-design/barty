@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldAlert, Quote } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import moment from 'moment';
 import { resolveUsers } from '@/lib/userMeta';
+import { withLegacyDatesList } from '@/lib/supabaseData';
 
 const STATUS_STYLE = {
   open: 'bg-amber-50 text-amber-700',
@@ -26,15 +27,30 @@ export default function AdminReports() {
 
   const load = async () => {
     try {
-      const recs = await base44.entities.UserReport.list('-created_date', 200);
-      setReports(recs || []);
+      const { data, error } = await supabase
+        .from('user_reports')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+
+      if (error) {
+        throw error;
+      }
+
+      const recs = withLegacyDatesList(data);
+      setReports(recs);
       const ids = [...new Set((recs || []).flatMap((r) => [r.reported_user_id, r.reporter_id]).filter(Boolean))];
       if (ids.length) {
         try {
           const { names } = await resolveUsers(ids);
           setNames(names);
-        } catch { /* generic labels */ }
+        } catch (error) {
+          console.error('Failed to resolve report names:', error);
+        }
       }
+    } catch (error) {
+      console.error('Failed to load admin reports:', error);
+      setReports([]);
     } finally {
       setLoading(false);
     }
@@ -44,7 +60,19 @@ export default function AdminReports() {
 
   const setStatus = async (rec, status) => {
     setReports((cur) => cur.map((r) => (r.id === rec.id ? { ...r, status } : r)));
-    try { await base44.entities.UserReport.update(rec.id, { status }); } catch { load(); }
+    try {
+      const { error } = await supabase
+        .from('user_reports')
+        .update({ status })
+        .eq('id', rec.id);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Failed to update report status:', error);
+      load();
+    }
   };
 
   if (!user || user.role !== 'admin') {

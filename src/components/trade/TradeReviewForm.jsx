@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Star } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 
 /**
@@ -20,8 +20,17 @@ export default function TradeReviewForm({ trade, reviewerId, onClose, onSubmitte
     setSubmitting(true);
     try {
       const revieweeId = trade.proposer_id === reviewerId ? trade.receiver_id : trade.proposer_id;
-      await base44.entities.Review.create({ trade_id: trade.id, reviewer_id: reviewerId, reviewee_id: revieweeId, rating, comment, recommend });
+      const { error } = await supabase
+        .from('reviews')
+        .insert({ trade_id: trade.id, reviewer_id: reviewerId, reviewee_id: revieweeId, rating, comment, recommend });
+
+      if (error) {
+        throw error;
+      }
+
       onSubmitted && onSubmitted();
+    } catch (error) {
+      console.error('Failed to submit trade review:', error);
     } finally {
       setSubmitting(false);
     }

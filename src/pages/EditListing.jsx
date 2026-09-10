@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import ListingForm from '@/components/ListingForm';
 import { ArrowLeft } from 'lucide-react';
+import { withLegacyDates } from '@/lib/supabaseData';
 
 export default function EditListing() {
   const { id } = useParams();
@@ -16,8 +17,19 @@ export default function EditListing() {
   useEffect(() => {
     (async () => {
       try {
-        const l = await base44.entities.Listing.get(id);
-        setListing(l);
+        const { data, error } = await supabase
+          .from('listings')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        if (error) {
+          throw error;
+        }
+
+        setListing(withLegacyDates(data));
+      } catch (error) {
+        console.error('Failed to load listing for editing:', error);
       } finally {
         setLoading(false);
       }
@@ -27,8 +39,18 @@ export default function EditListing() {
   const handleUpdate = async (data) => {
     setSaving(true);
     try {
-      await base44.entities.Listing.update(id, data);
+      const { error } = await supabase
+        .from('listings')
+        .update(data)
+        .eq('id', id);
+
+      if (error) {
+        throw error;
+      }
+
       navigate(`/listings/${id}`);
+    } catch (error) {
+      console.error('Failed to update listing:', error);
     } finally {
       setSaving(false);
     }
