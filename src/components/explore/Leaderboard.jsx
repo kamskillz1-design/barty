@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Trophy } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { useI18n } from '@/lib/i18n';
 
 const MEDALS = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
