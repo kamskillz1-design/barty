@@ -31,6 +31,7 @@ export default function TradeReceipt() {
           .from('trades')
           .select('*')
           .eq('id', id)
+          .or(`proposer_id.eq.${user.id},receiver_id.eq.${user.id}`)
           .maybeSingle();
 
         if (tradeError) {

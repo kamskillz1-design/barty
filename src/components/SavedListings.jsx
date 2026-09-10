@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Bookmark, X } from 'lucide-react';
 import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 import { Image } from '@/components/ui/image';
 import { withLegacyDatesList } from '@/lib/supabaseData';
 
@@ -13,16 +14,24 @@ import { withLegacyDatesList } from '@/lib/supabaseData';
  */
 export default function SavedListings() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [saved, setSaved] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!user?.id) {
+      setSaved([]);
+      setLoading(false);
+      return undefined;
+    }
+
     let alive = true;
     (async () => {
       try {
         const { data, error } = await supabase
           .from('saved_listings')
           .select('*')
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
           .limit(100);
 
@@ -37,7 +46,7 @@ export default function SavedListings() {
       finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, []);
+  }, [user?.id]);
 
   const remove = async (rec) => {
     setSaved((cur) => cur.filter((r) => r.id !== rec.id));
@@ -54,6 +63,8 @@ export default function SavedListings() {
       console.error('Failed to remove saved listing:', error);
     }
   };
+
+  if (!user) return null;
 
   return (
     <div>

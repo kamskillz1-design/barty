@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
+import { useAuth } from '@/lib/AuthContext';
 import { ShieldX, Unlock } from 'lucide-react';
 import { resolveUsers } from '@/lib/userMeta';
 import { withLegacyDatesList } from '@/lib/supabaseData';
@@ -12,16 +13,25 @@ import { withLegacyDatesList } from '@/lib/supabaseData';
  */
 export default function BlockedUsersList() {
   const { t } = useI18n();
+  const { user } = useAuth();
   const [blocks, setBlocks] = useState([]);
   const [names, setNames] = useState({});
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
+    if (!user?.id) {
+      setBlocks([]);
+      setNames({});
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('user_blocks')
         .select('*')
+        .eq('blocker_id', user.id)
         .eq('active', true)
         .order('created_at', { ascending: false })
         .limit(100);
@@ -48,7 +58,7 @@ export default function BlockedUsersList() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [user?.id]);
 
   const unblock = async (b) => {
     try {
