@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/base44Client';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/AuthContext';
 import { Flag, ShieldAlert, Check } from 'lucide-react';
@@ -21,19 +21,57 @@ export default function FlagButton({ listingId, className = '' }) {
   const [already, setAlready] = useState(false);
 
   const c = t.community?.flag || {};
-  const labels = (c.reasons) || {};
+  const labels = c.reasons || {};
 
-  const reset = () => { setReason(''); setNote(''); setDone(false); setAlready(false); };
+  const reset = () => {
+    setReason('');
+    setNote('');
+    setDone(false);
+    setAlready(false);
+  };
 
   const submit = async () => {
     if (!reason || !listingId) return;
-    if (!user) { setOpen(false); return; }
+    if (!user) {
+      setOpen(false);
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const res = await base44.functions.invoke('submitFlag', { listing_id: listingId, reason, note });
-      const data = res.data || {};
-      if (data.alreadyFlagged) { setAlready(true); setDone(true); }
-      else setDone(true);
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await fetch('/api/submitFlag', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token
+            ? { Authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          listing_id: listingId,
+          reason,
+          note,
+        }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to submit report');
+      }
+
+      if (data.alreadyFlagged) {
+        setAlready(true);
+        setDone(true);
+      } else {
+        setDone(true);
+      }
+    } catch (error) {
+      console.error('Failed to submit listing flag:', error);
     } finally {
       setSubmitting(false);
     }
@@ -74,7 +112,9 @@ export default function FlagButton({ listingId, className = '' }) {
                 {REASONS.map((r) => (
                   <div key={r} className="flex items-center gap-2.5 rounded-xl border border-slate-200 px-3 py-2.5 hover:bg-slate-50 cursor-pointer">
                     <RadioGroupItem value={r} id={`flag-${r}`} />
-                    <Label htmlFor={`flag-${r}`} className="cursor-pointer text-sm font-medium text-slate-700">{labels[r] || r}</Label>
+                    <Label htmlFor={`flag-${r}`} className="cursor-pointer text-sm font-medium text-slate-700">
+                      {labels[r] || r}
+                    </Label>
                   </div>
                 ))}
               </RadioGroup>
