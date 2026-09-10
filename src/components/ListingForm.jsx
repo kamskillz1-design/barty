@@ -5,7 +5,7 @@ import SearchableSelect from '@/components/SearchableSelect';
 import { COUNTRIES } from '@/lib/geoData';
 import { EXCHANGE_TYPES, categoriesForType, getCategory, EXCHANGE_LOCATIONS, subcatKey, OTHER_KEY } from '@/lib/categories';
 import { ImagePlus, X, Save, ArrowLeftRight } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { supabase } from '@/api/supabaseClient';
 import { geocode } from '@/lib/geocode';
 
 /**
