@@ -1,10 +1,20 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey =
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+  import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn("Missing Supabase environment variables. Check your Vercel/local .env settings.")
+if (!supabaseUrl) {
+  throw new Error(
+    'Missing VITE_SUPABASE_URL. Add it to your .env.local file.'
+  );
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
+if (!supabaseAnonKey) {
+  throw new Error(
+    'Missing VITE_SUPABASE_PUBLISHABLE_KEY or VITE_SUPABASE_ANON_KEY. Add one to .env.local.'
+  );
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
