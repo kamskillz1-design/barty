@@ -60,7 +60,7 @@ export default function VerificationCard() {
         throw error;
       }
 
-      setRequest(data);
+      setRequest(withLegacyDatesList([data])[0] || data);
     } catch (error) {
       console.error('Failed to request verification:', error);
     } finally {

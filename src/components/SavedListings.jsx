@@ -49,6 +49,7 @@ export default function SavedListings() {
   }, [user?.id]);
 
   const remove = async (rec) => {
+    const previous = saved;
     setSaved((cur) => cur.filter((r) => r.id !== rec.id));
     try {
       const { error } = await supabase
@@ -61,6 +62,7 @@ export default function SavedListings() {
       }
     } catch (error) {
       console.error('Failed to remove saved listing:', error);
+      setSaved(previous);
     }
   };
 

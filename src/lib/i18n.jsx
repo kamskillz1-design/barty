@@ -275,12 +275,18 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
     applyLang(nextCode, translations[nextCode]);
   };
 
-  // On mount, clear any stale language preference left behind by older
-  // translation flows so the app starts from the default static dictionary.
   useEffect(() => {
-    try { localStorage.removeItem(LANG_PREF_KEY); } catch { /* ignore */ }
+    const stored = readStoredLang() || initialLang;
+    const nextCode = translations[stored] ? stored : 'en';
+
+    if (stored && nextCode !== stored) {
+      try { localStorage.removeItem(LANG_PREF_KEY); } catch { /* ignore */ }
+    }
+
+    setLangState(nextCode);
+    applyLang(nextCode, translations[nextCode]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialLang]);
 
   return (
     <I18nContext.Provider value={{ lang, setLang, t, dir, translating }}>

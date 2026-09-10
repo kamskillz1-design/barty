@@ -80,7 +80,15 @@ export default function PublicProfile() {
           setUser(
             profile
               ? { ...profile, full_name: profile.full_name || fallbackName }
-              : (fallbackName || mine?.length || revs?.length || vr ? { id, full_name: fallbackName } : null)
+              : (fallbackName || mine?.length || revs?.length || vr
+                ? {
+                    id,
+                    full_name: fallbackName,
+                    city: '',
+                    country: '',
+                    bio: ''
+                  }
+                : null)
           );
           setListings(withLegacyDatesList(mine));
           setReviews(withLegacyDatesList(revs));
