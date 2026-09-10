@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/api/supabeClient';
+import { supabase } from '@/api/supabaseClient';
 
 const translations = {
   en: {
