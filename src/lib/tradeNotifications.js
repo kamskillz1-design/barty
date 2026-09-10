@@ -1,7 +1,7 @@
-import { base44 } from '@/api/base44Client';
+// Transactional trade emails are intentionally disabled during the Supabase
+// migration. This no-op keeps trade creation, messages, and counter-offers
+// working until a Supabase Edge Function and email provider are configured.
 
-// Fire-and-forget trade email notification (proposal / message / counter-offer).
-// Email delivery is best-effort and must never block or break the UI.
-export function notifyTradeEvent(tradeId, kind) {
-  return base44.functions.invoke('sendTradeNotification', { trade_id: tradeId, kind }).catch(() => {});
+export async function notifyTradeEvent(_tradeId, _kind) {
+  return { ok: true, skipped: true };
 }
