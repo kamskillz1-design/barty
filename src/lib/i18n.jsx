@@ -302,31 +302,39 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
     document.documentElement.lang = lang;
   }, [lang, dir]);
 
-  useEffect(() => {
-    const stored = readStoredLang();
-    if (stored !== 'en') {
-      triggerGTranslate(toGoogleCode(stored));
-    } else {
-      clearGoogTransCookie();
-    }
-  }, []);
+ useEffect(() => {
+  const stored = readStoredLang();
+
+  if (stored === 'en') {
+    clearGoogTransCookie();
+    return;
+  }
+
+  // Always re-apply non-English on page load
+  triggerGTranslate(toGoogleCode(stored));
+}, []);
 
   const setLang = (code) => {
-    const normalized = normalizeLangCode(code);
-    setLangState(normalized);
+  const normalized = normalizeLangCode(code);
+  setLangState(normalized);
 
-    try {
-      localStorage.setItem(LANG_PREF_KEY, normalized);
-    } catch {
-      // storage blocked
-    }
+  try {
+    localStorage.setItem(LANG_PREF_KEY, normalized);
+  } catch {
+    // storage blocked
+  }
 
-    if (!hasLocalDictionary(normalized)) {
-      triggerGTranslate(toGoogleCode(normalized));
-    } else {
-      clearGoogTransCookie();
+  if (normalized === 'en') {
+    clearGoogTransCookie();
+    if (typeof window.doGTranslate === 'function') {
+      window.doGTranslate('en|en');
     }
-  };
+    return;
+  }
+
+  // Always trigger Google translation for any non-English language
+  triggerGTranslate(toGoogleCode(normalized));
+};
 
   return (
     <I18nContext.Provider value={{ lang, setLang, t, dir }}>
