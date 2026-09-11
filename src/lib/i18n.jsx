@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { supabase } from '@/api/supabaseClient';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 const translations = {
   en: {
@@ -216,8 +215,124 @@ const UI_LANGUAGES = [
   { code: 'sa', label: 'Sanskrit' }
 ];
 
-const LANGUAGES_BY_CODE = UI_LANGUAGES.reduce((m, l) => { m[l.code] = l; return m; }, {});
+const LANGUAGES_BY_CODE = UI_LANGUAGES.reduce((m, l) => {
+  m[l.code] = l;
+  return m;
+}, {});
 
+const detectDir = (code) => {
+  const normalized = String(code || 'en').split(/[-_]/)[0];
+  return RTL_CODES.has(normalized) ? 'rtl' : 'ltr';
+};
+
+const deepMerge = (base, override) => {
+  if (override === undefined) return base;
+  if (!base || typeof base !== 'object' || Array.isArray(base)) return override;
+  if (!override || typeof override !== 'object' || Array.isArray(override)) return base;
+
+  const out = { ...base };
+  for (const key of Object.keys(override)) {
+    out[key] = deepMerge(base[key], override[key]);
+  }
+  return out;
+};
+
+const I18nContext = createContext(null);
+
+const LANG_PREF_KEY = 'ibarti_language';
+
+const normalizeLang = (code) => {
+  if (!code || typeof code !== 'string') return 'en';
+
+  const trimmed = code.trim();
+  if (translations[trimmed]) return trimmed;
+  if (LANGUAGES_BY_CODE[trimmed]) return trimmed;
+
+  const base = trimmed.toLowerCase().split(/[-_]/)[0];
+  if (translations[base]) return base;
+  if (LANGUAGES_BY_CODE[base]) return base;
+
+  return 'en';
+};
+
+const readStoredLang = () => {
+  try {
+    return normalizeLang(localStorage.getItem(LANG_PREF_KEY) || '');
+  } catch {
+    return 'en';
+  }
+};
+
+const detectBrowserLang = () => {
+  try {
+    return normalizeLang(navigator.language || navigator.userLanguage || 'en');
+  } catch {
+    return 'en';
+  }
+};
+
+export const I18nProvider = ({ children, initialLang = 'en' }) => {
+  const [lang, setLangState] = useState(() => {
+    const initial = normalizeLang(initialLang);
+    const stored = readStoredLang();
+    if (stored && stored !== 'en') return stored;
+    const browser = detectBrowserLang();
+    if (browser) return browser;
+    return initial || 'en';
+  });
+
+  const safeLang = normalizeLang(lang);
+
+  const t = useMemo(() => {
+    const selected = translations[safeLang] || translations.en;
+    const merged = deepMerge(translations.en, selected || {});
+    merged._dir = selected?._dir || detectDir(safeLang);
+    return merged;
+  }, [safeLang]);
+
+  const dir = t?._dir || detectDir(safeLang);
+
+  useEffect(() => {
+    document.documentElement.dir = dir;
+    document.documentElement.lang = safeLang;
+  }, [safeLang, dir]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LANG_PREF_KEY, safeLang);
+    } catch {
+      // storage blocked
+    }
+  }, [safeLang]);
+
+  const setLang = (code) => {
+    setLangState(normalizeLang(code));
+  };
+
+  const value = useMemo(() => ({
+    lang: safeLang,
+    setLang,
+    t,
+    dir,
+    languages: UI_LANGUAGES
+  }), [safeLang, t, dir]);
+
+  return (
+    <I18nContext.Provider value={value}>
+      {children}
+    </I18nContext.Provider>
+  );
+};
+
+export const useI18n = () => {
+  const ctx = useContext(I18nContext);
+  if (!ctx) throw new Error('useI18n must be used within I18nProvider');
+  return ctx;
+};
+
+export const LANGUAGES = UI_LANGUAGES;
+
+export { translations };
 const detectDir = (code) => (RTL_CODES.has(code) ? 'rtl' : 'ltr');
 
 // Deep-merge so dynamically translated dictionaries fall back to English for any
