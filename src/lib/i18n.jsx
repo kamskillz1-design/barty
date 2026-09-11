@@ -273,15 +273,15 @@ const clearGoogTransCookie = () => {
 };
 
 const triggerGTranslate = (googleCode, attemptsLeft = 12) => {
+  /*
+    This function is only for Google-supported languages that
+    do not have a local React dictionary.
+    Never use Google Translate to reset English.
+  */
   if (googleCode === 'en') {
     clearGoogTransCookie();
-    if (typeof window.doGTranslate === 'function') {
-      window.doGTranslate('en|en');
-    }
     return;
   }
-
-  setGoogTransCookie(googleCode);
 
   if (typeof window.doGTranslate === 'function') {
     window.doGTranslate(`en|${googleCode}`);
@@ -289,7 +289,10 @@ const triggerGTranslate = (googleCode, attemptsLeft = 12) => {
   }
 
   if (attemptsLeft <= 0) return;
-  setTimeout(() => triggerGTranslate(googleCode, attemptsLeft - 1), 300);
+
+  window.setTimeout(() => {
+    triggerGTranslate(googleCode, attemptsLeft - 1);
+  }, 300);
 };
 
 export const I18nProvider = ({ children, initialLang = 'en' }) => {
@@ -318,26 +321,36 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
     triggerGTranslate(toGoogleCode(stored));
   }, []);
 
-  const setLang = (code) => {
+ const setLang = (code) => {
   const normalized = normalizeLangCode(code);
 
-  // If the user selects the language already in use, do nothing.
+  // Do nothing if this language is already selected.
   if (normalized === lang) return;
 
   try {
-    // Save the selection before the page refreshes.
+    // Save the chosen language before reloading the page.
     localStorage.setItem(LANG_PREF_KEY, normalized);
   } catch {
     // Storage is unavailable or blocked.
   }
 
   /*
-    Google Translate modifies the live HTML outside React.
-    Clearing its translation cookie and reloading gives the app
-    a clean original page before the saved language is applied.
+    English, Spanish, French and Arabic use the local dictionaries
+    in this file. Remove Google Translate, then load a clean page.
   */
-  clearGoogTransCookie();
-  window.location.reload();
+  if (hasLocalDictionary(normalized)) {
+    clearGoogTransCookie();
+    window.location.replace(window.location.href);
+    return;
+  }
+
+  /*
+    All other languages use Google Translate.
+    Save the target-language cookie before reloading, so Google
+    translates the fresh page after it loads.
+  */
+  setGoogTransCookie(toGoogleCode(normalized));
+  window.location.replace(window.location.href);
 };
 
 return (
