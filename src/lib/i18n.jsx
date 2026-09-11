@@ -230,20 +230,31 @@ const VALID_CODES = new Set(UI_LANGUAGES.map((l) => l.code));
 const hasLocalDictionary = (code) => Boolean(translations[code]);
 
 const normalizeLangCode = (input) => {
-  if (!input || typeof input !== 'string') return 'en';
+  if (!input || typeof input !== 'string') return null;
   const lower = input.toLowerCase().trim();
   if (VALID_CODES.has(lower)) return lower;
   const base = lower.split('-')[0];
   if (VALID_CODES.has(base)) return base;
-  return 'en';
+  return null;
 };
 
 const readStoredLang = () => {
   try {
-    return normalizeLangCode(localStorage.getItem(LANG_PREF_KEY) || 'en');
+    const saved = localStorage.getItem(LANG_PREF_KEY);
+    if (saved) {
+      const normalizedSaved = normalizeLangCode(saved);
+      if (normalizedSaved) return normalizedSaved;
+    }
+
+    const browserLang = navigator.language || navigator.userLanguage;
+    if (browserLang) {
+      const normalizedBrowser = normalizeLangCode(browserLang);
+      if (normalizedBrowser) return normalizedBrowser;
+    }
   } catch {
-    return 'en';
+    // Fallback if localStorage or navigator is restricted
   }
+  return 'en';
 };
 
 const getRootDomain = () => {
@@ -292,7 +303,7 @@ const triggerGTranslate = (googleCode, attemptsLeft = 12) => {
 
 export const I18nProvider = ({ children, initialLang = 'en' }) => {
   const [lang, setLangState] = useState(() =>
-    normalizeLangCode(readStoredLang() || initialLang)
+    normalizeLangCode(readStoredLang() || initialLang) || 'en'
   );
 
   const t = useMemo(() => translations[lang] || translations.en, [lang]);
@@ -318,7 +329,7 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
   }, []);
 
   const setLang = (code) => {
-    const normalized = normalizeLangCode(code);
+    const normalized = normalizeLangCode(code) || 'en';
 
     if (normalized === lang) return;
 
