@@ -8,82 +8,10 @@
       content="iBarti — a community marketplace for swapping items and services."
     />
     <title>iBarti</title>
-
-    <style>
-      /* Hide GTranslate's default banner/highlighting so it doesn't mess up our layout */
-      .goog-te-banner-frame,
-      .skiptranslate {
-        display: none !important;
-      }
-      body {
-        top: 0 !important;
-      }
-      .goog-text-highlight {
-        background: none !important;
-        box-shadow: none !important;
-      }
-    </style>
   </head>
   <body>
     <div id="root"></div>
-
-    <!-- GTranslate widget setup (hidden — our own buttons trigger it) -->
-    <div id="google_translate_element2" style="display:none;"></div>
-    <script>
-      function googleTranslateElementInit2() {
-        new google.translate.TranslateElement(
-          {
-            pageLanguage: 'en',
-            autoDisplay: false
-          },
-          'google_translate_element2'
-        );
-      }
-
-      function GTranslateFireEvent(element, event) {
-        try {
-          if (document.createEventObject) {
-            var evt = document.createEventObject();
-            element.fireEvent('on' + event, evt);
-          } else {
-            var evt = document.createEvent('HTMLEvents');
-            evt.initEvent(event, true, true);
-            element.dispatchEvent(evt);
-          }
-        } catch (e) {}
-      }
-
-      function doGTranslate(lang_pair) {
-        if (lang_pair.value) lang_pair = lang_pair.value;
-        if (lang_pair === '') return;
-        var lang = lang_pair.split('|')[1];
-        if (document.getElementById('google_translate_element2') === null) {
-          doGTranslate.clicked = 1;
-          setTimeout(function () { doGTranslate(lang_pair); }, 500);
-          return;
-        }
-        if (
-          document.getElementById('google_translate_element2').innerHTML.length === 0 ||
-          (doGTranslate.clicked === 1 && document.getElementById(':1.container') === null)
-        ) {
-          doGTranslate.clicked = 1;
-          setTimeout(function () { doGTranslate(lang_pair); }, 500);
-          return;
-        }
-        var teCombo = document.getElementById(':1.targetLanguage') || document.querySelector('.goog-te-combo');
-        if (!teCombo) {
-          setTimeout(function () { doGTranslate(lang_pair); }, 500);
-          return;
-        }
-        teCombo.value = lang;
-        GTranslateFireEvent(teCombo, 'change');
-        GTranslateFireEvent(teCombo, 'change');
-      }
-
-      window.doGTranslate = doGTranslate;
-    </script>
-    <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit2"></script>
-
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
+
