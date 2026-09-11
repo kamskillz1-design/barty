@@ -91,7 +91,7 @@ const translations = {
     listing: { new: 'إعلان جديد', title: 'العنوان', description: 'الوصف', intent: 'أنا', offering: 'أعرض', seeking: 'أبحث عن', offeringHint: 'أعرض هذا المنتج أو الخدمة', seekingHint: 'أبحث عن هذا المنتج أو الخدمة', haveType: 'لديك (النوع)', haveCategory: 'لديك (الفئة)', haveSubcategory: 'لديك (الفئة الفرعية)', wantType: 'تريد (النوع)', wantCategory: 'تريد (الفئة)', wantSubcategory: 'تريد (الفئة الفرعية)', openToAnything: 'منفتح على أي شيء', exchangeLocation: 'موقع التبادل', tags: 'وسوم', country: 'الدولة', city: 'المدينة', town: 'البلدة / المنطقة', baselineValue: 'القيمة الأساسية', save: 'حفظ الإعلان', back: 'رجوع', created: 'تم إنشاء الإعلان', saveError: 'فشل حفظ الإعلان' },
     exchType: { goods: 'سلع', services: 'خدمات', digital: 'رقمي' },
     exchLoc: { local: 'محلي', national: 'وطني', international: 'دولي', online: 'عبر الإنترنت' },
-    v1cat: { electronics_technology: 'الإلكترونيات والتقنية', home_furniture: 'المنزل والأثاث', fashion_personal: 'الأزياء والمظهر', beauty_wellness: 'الجمال والعافية', books_education: 'الكتب والتعليم', sports_outdoors: 'الرياضة والهواء الطلق', tools_diy: 'الأدوات والأعمال اليدوية', automotive: 'السيارات', kids_baby: 'الأطفال والرضع', pet_supplies: 'مستلزمات الحيوانات', garden_outdoor: 'الحديقة والخارج', services: 'خدمات' },
+    v1cat: { electronics_technology: 'الإلكترونيات والتقنية', home_furniture: 'المنزل والأثاث', fashion_personal: 'الأزياء والمظهر', beauty_wellness: 'الجمال والعافية', books_education: 'الكتب والتعليم', sports_outdoors: 'الرياضة والهواء الطلق', tools_diy: 'الأدوات والأعمال اليدوية', automotive: 'السيارات', kids_baby: 'الأطفال والرضع', pet_supplies: 'مستلزمات الحيوانات', garden_outdoor: 'الحديقة والخارج', services: 'Services' },
     v1sub: { electronics_technology__phones: 'هواتف', electronics_technology__laptops: 'حواسب محمولة', electronics_technology__desktops: 'حواسب مكتبية', electronics_technology__tablets: 'أجهزة لوحية', electronics_technology__audio: 'صوتيات', electronics_technology__camera: 'كاميرات وتصوير', electronics_technology__gaming: 'ألعاب فيديو' },
     tags: { label: 'وسوم', placeholder: 'أضف وسمًا…', add: 'إضافة', hint: 'أضف كلمات مفتاحية لمساعدة الناس في إيجاد هذا الإعلان.' },
     trade: { title: 'المقايضات', empty: 'لا مقايضات بعد', youOffered: 'عرضت', youRequested: 'طلبت', status: { pending: 'قيد الانتظار', accepted: 'مقبول', completed: 'مكتمل', cancelled: 'ملغى' } },
@@ -100,7 +100,7 @@ const translations = {
     safety: { title: 'ابقَ آمنًا', body: 'التقِ دائمًا في مكان عام وافحص السلع أو الخدمات بدقة شخصيًا قبل الإتمام. تصبح المقايضات نهائية بعد الإتمام حضوريًا.' },
     profile: { title: 'الملف الشخصي', language: 'اللغة', country: 'الدولة', city: 'المدينة / البلدة', town: 'القرية / المنطقة', bio: 'نبذة', save: 'حفظ الملف الشخصي', saved: 'تم الحفظ', saveError: 'فشل الحفظ', verified: 'هوية موثّقة', notVerified: 'غير موثّق', verify: 'توثيق الهوية' },
     common: { loading: 'جارٍ التحميل...', empty: 'لا شيء هنا', create: 'إنشاء', close: 'إغلاق', you: 'أنت', member: 'عضو iBarti', propose: 'اقترح مقايضة' },
-    community: { comments: { title: 'التعليقات', empty: 'لا تعليقات بعد. ابدأ المحادثة.', placeholder: 'اكتب تعليقًا…', post: 'نشر', edit: 'تعديل', delete: 'حذف', save: 'حفظ', cancel: 'إلغاء' } },
+    community: { comments: { title: 'Comments', empty: 'No comments yet. Start the conversation.', placeholder: 'Write a comment…', post: 'Post', edit: 'Edit', delete: 'Delete', save: 'Save', cancel: 'Cancel' } },
     landing: { hero: 'قايض أي شيء، في أي مكان — دون أموال', sub: 'يربط iBarti الناس حول العالم لتبادل السلع والخدمات عبر مقايضة عادلة بين الدول والمدن والقرى.', cta: 'إعلان جديد' }
   }
 };
@@ -274,10 +274,6 @@ const clearGoogTransCookie = () => {
 
 const triggerGTranslate = (googleCode, attemptsLeft = 12) => {
   if (googleCode === 'en') {
-    setGoogTransCookie('en');
-    if (typeof window.doGTranslate === 'function') {
-      window.doGTranslate('en|en');
-    }
     clearGoogTransCookie();
     return;
   }
@@ -310,17 +306,14 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
   useEffect(() => {
     const stored = readStoredLang();
 
-    // Local React translations: English, Spanish, French, Arabic.
     if (hasLocalDictionary(stored)) {
-      setGoogTransCookie('en');
-      if (typeof window.doGTranslate === 'function') {
+      clearGoogTransCookie();
+      if (stored === 'en' && typeof window.doGTranslate === 'function') {
         window.doGTranslate('en|en');
       }
-      clearGoogTransCookie();
       return;
     }
 
-    // Other languages use Google Translate after the page loads.
     triggerGTranslate(toGoogleCode(stored));
   }, []);
 
@@ -336,11 +329,11 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
     }
 
     if (hasLocalDictionary(normalized)) {
+      clearGoogTransCookie();
       setGoogTransCookie('en');
       if (typeof window.doGTranslate === 'function') {
         window.doGTranslate('en|en');
       }
-      clearGoogTransCookie();
       window.location.replace(window.location.href);
       return;
     }
