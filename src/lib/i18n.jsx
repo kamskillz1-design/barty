@@ -273,12 +273,11 @@ const clearGoogTransCookie = () => {
 };
 
 const triggerGTranslate = (googleCode, attemptsLeft = 12) => {
-  /*
-    This function is only for Google-supported languages that
-    do not have a local React dictionary.
-    Never use Google Translate to reset English.
-  */
   if (googleCode === 'en') {
+    setGoogTransCookie('en');
+    if (typeof window.doGTranslate === 'function') {
+      window.doGTranslate('en|en');
+    }
     clearGoogTransCookie();
     return;
   }
@@ -313,6 +312,10 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
 
     // Local React translations: English, Spanish, French, Arabic.
     if (hasLocalDictionary(stored)) {
+      setGoogTransCookie('en');
+      if (typeof window.doGTranslate === 'function') {
+        window.doGTranslate('en|en');
+      }
       clearGoogTransCookie();
       return;
     }
@@ -321,43 +324,36 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
     triggerGTranslate(toGoogleCode(stored));
   }, []);
 
- const setLang = (code) => {
-  const normalized = normalizeLangCode(code);
+  const setLang = (code) => {
+    const normalized = normalizeLangCode(code);
 
-  // Do nothing if this language is already selected.
-  if (normalized === lang) return;
+    if (normalized === lang) return;
 
-  try {
-    // Save the chosen language before reloading the page.
-    localStorage.setItem(LANG_PREF_KEY, normalized);
-  } catch {
-    // Storage is unavailable or blocked.
-  }
+    try {
+      localStorage.setItem(LANG_PREF_KEY, normalized);
+    } catch {
+      // Storage is unavailable or blocked.
+    }
 
-  /*
-    English, Spanish, French and Arabic use the local dictionaries
-    in this file. Remove Google Translate, then load a clean page.
-  */
-  if (hasLocalDictionary(normalized)) {
-    clearGoogTransCookie();
+    if (hasLocalDictionary(normalized)) {
+      setGoogTransCookie('en');
+      if (typeof window.doGTranslate === 'function') {
+        window.doGTranslate('en|en');
+      }
+      clearGoogTransCookie();
+      window.location.replace(window.location.href);
+      return;
+    }
+
+    setGoogTransCookie(toGoogleCode(normalized));
     window.location.replace(window.location.href);
-    return;
-  }
+  };
 
-  /*
-    All other languages use Google Translate.
-    Save the target-language cookie before reloading, so Google
-    translates the fresh page after it loads.
-  */
-  setGoogTransCookie(toGoogleCode(normalized));
-  window.location.replace(window.location.href);
-};
-
-return (
-  <I18nContext.Provider value={{ lang, setLang, t, dir }}>
-    {children}
-  </I18nContext.Provider>
-);
+  return (
+    <I18nContext.Provider value={{ lang, setLang, t, dir }}>
+      {children}
+    </I18nContext.Provider>
+  );
 };
 
 export const useI18n = () => {
