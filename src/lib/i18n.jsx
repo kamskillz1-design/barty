@@ -319,44 +319,32 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
   }, []);
 
   const setLang = (code) => {
-    const normalized = normalizeLangCode(code);
-    const wasGoogleTranslated = !hasLocalDictionary(lang);
-    const willUseGoogleTranslate = !hasLocalDictionary(normalized);
+  const normalized = normalizeLangCode(code);
 
-    try {
-      localStorage.setItem(LANG_PREF_KEY, normalized);
-    } catch {
-      // Storage is unavailable or blocked.
-    }
+  // If the user selects the language already in use, do nothing.
+  if (normalized === lang) return;
 
-    /*
-      Google Translate directly changes the page HTML.
-      Reloading restores the original React page before applying
-      a new Google-translated language or returning to English.
-    */
-    if (wasGoogleTranslated) {
-      clearGoogTransCookie();
-      window.location.reload();
-      return;
-    }
+  try {
+    // Save the selection before the page refreshes.
+    localStorage.setItem(LANG_PREF_KEY, normalized);
+  } catch {
+    // Storage is unavailable or blocked.
+  }
 
-    setLangState(normalized);
+  /*
+    Google Translate modifies the live HTML outside React.
+    Clearing its translation cookie and reloading gives the app
+    a clean original page before the saved language is applied.
+  */
+  clearGoogTransCookie();
+  window.location.reload();
+};
 
-    // English, Spanish, French, and Arabic use local dictionaries.
-    if (!willUseGoogleTranslate) {
-      clearGoogTransCookie();
-      return;
-    }
-
-    // Unsupported local languages are translated by Google.
-    triggerGTranslate(toGoogleCode(normalized));
-  };
-
-  return (
-    <I18nContext.Provider value={{ lang, setLang, t, dir }}>
-      {children}
-    </I18nContext.Provider>
-  );
+return (
+  <I18nContext.Provider value={{ lang, setLang, t, dir }}>
+    {children}
+  </I18nContext.Provider>
+);
 };
 
 export const useI18n = () => {
