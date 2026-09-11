@@ -293,8 +293,11 @@ const triggerGTranslate = (googleCode, attemptsLeft = 12) => {
 };
 
 export const I18nProvider = ({ children, initialLang = 'en' }) => {
-  const [lang, setLangState] = useState(() => normalizeLangCode(readStoredLang() || initialLang));
-  const t = useMemo(() => translations[lang] || translations.en, [lang]); 
+  const [lang, setLangState] = useState(() =>
+    normalizeLangCode(readStoredLang() || initialLang)
+  );
+
+  const t = useMemo(() => translations[lang] || translations.en, [lang]);
   const dir = detectDir(lang);
 
   useEffect(() => {
@@ -302,47 +305,41 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
     document.documentElement.lang = lang;
   }, [lang, dir]);
 
- useEffect(() => {
-  const stored = readStoredLang();
+  useEffect(() => {
+    const stored = readStoredLang();
 
-  // English, Spanish, French, and Arabic use the app's own
-  // React translation dictionaries, not Google Translate.
-  if (hasLocalDictionary(stored)) {
-    clearGoogTransCookie();
-    return;
-  }
+    // Local app dictionaries: English, Spanish, French, Arabic.
+    // Do not let Google Translate interfere with these languages.
+    if (hasLocalDictionary(stored)) {
+      clearGoogTransCookie();
+      return;
+    }
 
-  // All other languages continue to use Google Translate.
-  triggerGTranslate(toGoogleCode(stored));
-}, []);
+    // All remaining languages still use Google Translate.
+    triggerGTranslate(toGoogleCode(stored));
+  }, []);
 
- const setLang = (code) => {
-  const normalized = normalizeLangCode(code);
+  const setLang = (code) => {
+    const normalized = normalizeLangCode(code);
 
-  setLangState(normalized);
+    setLangState(normalized);
 
-  try {
-    localStorage.setItem(LANG_PREF_KEY, normalized);
-  } catch {
-    // Storage is unavailable or blocked.
-  }
+    try {
+      localStorage.setItem(LANG_PREF_KEY, normalized);
+    } catch {
+      // Storage is unavailable or blocked.
+    }
 
-  // Built-in app translations:
-  // en = English, es = Spanish, fr = French, ar = Arabic.
-  // Clearing Google's cookie prevents Google-translated text
-  // from interfering with React's own translations.
-  if (hasLocalDictionary(normalized)) {
-    clearGoogTransCookie();
-    return;
-  }
+    // Use the app's built-in translation dictionaries for:
+    // English, Spanish, French, and Arabic.
+    if (hasLocalDictionary(normalized)) {
+      clearGoogTransCookie();
+      return;
+    }
 
-  // Every language without a local dictionary still uses Google Translate.
-  triggerGTranslate(toGoogleCode(normalized));
-};
-
-  // Always trigger Google translation for any non-English language
-  triggerGTranslate(toGoogleCode(normalized));
-};
+    // Keep Google Translate for all other language choices.
+    triggerGTranslate(toGoogleCode(normalized));
+  };
 
   return (
     <I18nContext.Provider value={{ lang, setLang, t, dir }}>
@@ -353,10 +350,13 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
 
 export const useI18n = () => {
   const ctx = useContext(I18nContext);
-  if (!ctx) throw new Error('useI18n must be used within I18nProvider');
+
+  if (!ctx) {
+    throw new Error('useI18n must be used within I18nProvider');
+  }
+
   return ctx;
 };
 
 export const LANGUAGES = UI_LANGUAGES;
-
 export { translations };
