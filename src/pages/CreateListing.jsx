@@ -13,23 +13,51 @@ export default function CreateListing() {
   const [saving, setSaving] = useState(false);
 
   const initialValues = {
-    title: '', description: '',
-    have_exchange_type: '', have_category: '', have_subcategory: '',
-    want_exchange_type: '', want_category: '', want_subcategory: '',
-    is_open_to_anything: false, exchange_location: 'local', tags: [],
-    country: user?.country || '', city: user?.city || '', town: '',
+    title: '',
+    description: '',
+    have_exchange_type: '',
+    have_category: '',
+    have_subcategory: '',
+    want_exchange_type: '',
+    want_category: '',
+    want_subcategory: '',
+    is_open_to_anything: false,
+    exchange_location: 'local',
+    tags: [],
+    country: user?.country || '',
+    city: user?.city || '',
+    town: '',
     baseline_value: 50
   };
 
-  const handleCreate = async (data) => {
+  const handleCreate = async (values) => {
+    if (!user?.id) return;
+
     setSaving(true);
     try {
-      await base44.entities.Listing.create({
-        ...data,
-        status: 'available',
-        offering_user_id: user.id
-      });
+      const { data, error } = await supabase
+        .from('listings')
+        .insert({
+          ...values,
+          status: 'available',
+          offering_user_id: user.id
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Failed to create listing:', error);
+        return;
+      }
+
+      if (!data?.id) {
+        console.error('Listing creation returned no row');
+        return;
+      }
+
       navigate('/my-listings');
+    } catch (err) {
+      console.error('Unexpected create listing error:', err);
     } finally {
       setSaving(false);
     }
@@ -41,7 +69,13 @@ export default function CreateListing() {
         <ArrowLeft className="h-4 w-4" /> {t.listing.back}
       </button>
       <h1 className="text-2xl font-bold text-slate-900">{t.listing.new}</h1>
-      <ListingForm initialValues={initialValues} onSubmit={handleCreate} saving={saving} submitLabel={t.listing.save} onCancel={() => navigate(-1)} />
+      <ListingForm
+        initialValues={initialValues}
+        onSubmit={handleCreate}
+        saving={saving}
+        submitLabel={t.listing.save}
+        onCancel={() => navigate(-1)}
+      />
     </div>
   );
 }
