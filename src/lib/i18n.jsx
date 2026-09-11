@@ -305,32 +305,40 @@ export const I18nProvider = ({ children, initialLang = 'en' }) => {
  useEffect(() => {
   const stored = readStoredLang();
 
-  if (stored === 'en') {
+  // English, Spanish, French, and Arabic use the app's own
+  // React translation dictionaries, not Google Translate.
+  if (hasLocalDictionary(stored)) {
     clearGoogTransCookie();
     return;
   }
 
-  // Always re-apply non-English on page load
+  // All other languages continue to use Google Translate.
   triggerGTranslate(toGoogleCode(stored));
 }, []);
 
-  const setLang = (code) => {
+ const setLang = (code) => {
   const normalized = normalizeLangCode(code);
+
   setLangState(normalized);
 
   try {
     localStorage.setItem(LANG_PREF_KEY, normalized);
   } catch {
-    // storage blocked
+    // Storage is unavailable or blocked.
   }
 
-  if (normalized === 'en') {
+  // Built-in app translations:
+  // en = English, es = Spanish, fr = French, ar = Arabic.
+  // Clearing Google's cookie prevents Google-translated text
+  // from interfering with React's own translations.
+  if (hasLocalDictionary(normalized)) {
     clearGoogTransCookie();
-    if (typeof window.doGTranslate === 'function') {
-      window.doGTranslate('en|en');
-    }
     return;
   }
+
+  // Every language without a local dictionary still uses Google Translate.
+  triggerGTranslate(toGoogleCode(normalized));
+};
 
   // Always trigger Google translation for any non-English language
   triggerGTranslate(toGoogleCode(normalized));
