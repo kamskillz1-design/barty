@@ -1,5 +1,3 @@
-Barty i18n.js fiel Claude version 1:
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/api/supabaseClient';
 
