@@ -239,11 +239,27 @@ const readStoredLang = () => {
   try { return localStorage.getItem(LANG_PREF_KEY) || 'en'; } catch { return 'en'; }
 };
 
+// Clears GTranslate's cookie so the page reloads showing the original
+// English text. Selecting "English" through doGTranslate does nothing,
+// because English is the page's source language, not a translation target.
+const restoreOriginalLanguage = () => {
+  const domain = window.location.hostname;
+  // Clear for the exact host and for the root domain (GTranslate sometimes
+  // sets the cookie on the parent domain depending on setup).
+  document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+  document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
+  document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain};`;
+  window.location.reload();
+};
+
 // Calls GTranslate's own switch function once it has finished loading on the
 // page. GTranslate itself also retries internally, but we add a bounded
 // retry here in case window.doGTranslate hasn't been attached yet at all.
 const triggerGTranslate = (googleCode, attemptsLeft = 8) => {
-  if (googleCode === 'en') return; // English is the source language — nothing to translate.
+  if (googleCode === 'en') {
+    restoreOriginalLanguage();
+    return;
+  }
   if (typeof window.doGTranslate === 'function') {
     window.doGTranslate(`en|${googleCode}`);
     return;
