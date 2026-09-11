@@ -294,7 +294,7 @@ const triggerGTranslate = (googleCode, attemptsLeft = 12) => {
 
 export const I18nProvider = ({ children, initialLang = 'en' }) => {
   const [lang, setLangState] = useState(() => normalizeLangCode(readStoredLang() || initialLang));
-  const t = useMemo(() => translations[lang] || translations.en, [lang]);
+  const t = useMemo(() => translations[lang] || translations.en, [lang]); 
   const dir = detectDir(lang);
 
   useEffect(() => {
